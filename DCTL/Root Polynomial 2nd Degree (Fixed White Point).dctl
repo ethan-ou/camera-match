@@ -1,0 +1,29 @@
+DEFINE_UI_PARAMS(red_g, Red-Green, DCTLUI_SLIDER_FLOAT, 0.0, -2.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(red_b, Red-Blue, DCTLUI_SLIDER_FLOAT, 0.0, -2.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(red_rt_rg, Red-Root-Red-Green, DCTLUI_SLIDER_FLOAT, 0.0, -2.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(red_rt_gb, Red-Root-Green-Blue, DCTLUI_SLIDER_FLOAT, 0.0, -2.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(red_rt_rb, Red-Root-Red-Blue, DCTLUI_SLIDER_FLOAT, 0.0, -2.0, 2.0, 0.001)
+
+DEFINE_UI_PARAMS(grn_r, Green-Red, DCTLUI_SLIDER_FLOAT,  0.0, -2.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(grn_b, Green-Blue, DCTLUI_SLIDER_FLOAT,  0.0, -2.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(grn_rt_rg, Green-Root-Red-Green, DCTLUI_SLIDER_FLOAT,  0.0, -2.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(grn_rt_gb, Green-Root-Green-Blue, DCTLUI_SLIDER_FLOAT,  0.0, -2.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(grn_rt_rb, Green-Root-Red-Blue, DCTLUI_SLIDER_FLOAT,  0.0, -2.0, 2.0, 0.001)
+
+DEFINE_UI_PARAMS(blu_r, Blue-Red, DCTLUI_SLIDER_FLOAT,  0.0, -2.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(blu_g, Blue-Green, DCTLUI_SLIDER_FLOAT,  0.0, -2.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(blu_rt_rg, Blue-Root-Red-Green, DCTLUI_SLIDER_FLOAT,  0.0, -2.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(blu_rt_gb, Blue-Root-Green-Blue, DCTLUI_SLIDER_FLOAT,  0.0, -2.0, 2.0, 0.001)
+DEFINE_UI_PARAMS(blu_rt_rb, Blue-Root-Red-Blue, DCTLUI_SLIDER_FLOAT,  0.0, -2.0, 2.0, 0.001)
+
+__DEVICE__ float3 transform(int p_Width, int p_Height, int p_X, int p_Y, float p_R, float p_G, float p_B)
+{
+    float red_point = 1.0f - red_g - red_b - red_rt_rg - red_rt_gb - red_rt_rb;
+    float green_point = 1.0f - grn_r - grn_b - grn_rt_rg - grn_rt_gb - grn_rt_rb;
+    float blue_point = 1.0f - blu_r - blu_g - blu_rt_rg - blu_rt_gb - blu_rt_rb;
+
+    float r = (p_R * red_point) + (p_G * red_g) + (p_B * red_b) + (_powf(p_R * p_G, 0.5) * red_rt_rg) + (_powf(p_G * p_B, 0.5) * red_rt_gb) + (_powf(p_R * p_B, 0.5) * red_rt_rb);
+    float g = (p_R * grn_r) + (p_G * green_point) + (p_B * grn_b) + (_powf(p_R * p_G, 0.5) * grn_rt_rg) + (_powf(p_G * p_B, 0.5) * grn_rt_gb) + (_powf(p_R * p_B, 0.5) * grn_rt_rb);
+    float b = (p_R * blu_r) + (p_G * blu_g) + (p_B * blue_point) + (_powf(p_R * p_G, 0.5) * blu_rt_rg) + (_powf(p_G * p_B, 0.5) * blu_rt_gb) + (_powf(p_R * p_B, 0.5) * blu_rt_rb);
+    return make_float3(r, g, b);
+}
