@@ -2,7 +2,7 @@ import numpy as np
 
 from colour.characterisation import polynomial_expansion_Finlayson2015
 
-def colour_correction_matrix(RGB, matrix, degree=1):
+def colour_correction(RGB, matrix, degree=1):
     shape = RGB.shape
 
     RGB = np.reshape(RGB, (-1, 3))
@@ -12,7 +12,7 @@ def colour_correction_matrix(RGB, matrix, degree=1):
 
     return np.reshape(np.transpose(np.dot(matrix, np.transpose(RGB_e))), shape)
 
-def root_polynomial_colour_correction_matrix(RGB, matrix, degree=3):
+def root_polynomial_colour_correction(RGB, matrix, degree=3):
     shape = RGB.shape
 
     RGB = np.reshape(RGB, (-1, 3))
@@ -22,7 +22,7 @@ def root_polynomial_colour_correction_matrix(RGB, matrix, degree=3):
 
     return np.reshape(np.transpose(np.dot(matrix, np.transpose(RGB_e))), shape)
 
-def tetrahedral_colour_correction_matrix(RGB, matrix):
+def tetrahedral_colour_correction(RGB, matrix):
     # Return indicies of boolean comparison
     # e.g. a = [0, 1, 3], b = [1, 1, 1]
     # i((a > b)) -> [1, 2]
