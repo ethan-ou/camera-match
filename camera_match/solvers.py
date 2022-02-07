@@ -1,29 +1,36 @@
 import numpy as np
 from colour.characterisation import polynomial_expansion_Finlayson2015
-import xalglib
-from models import colour_correction, root_polynomial_colour_correction, tetrahedral_colour_correction
+from xalglib import xalglib
+from scipy.optimize import least_squares
+from models import colour_correction, identity_matrix
+from metrics import colour_distance
 
-def solve_fn(matrix, shape, fn, source, target):
+def solve_fn(matrix, matrix_shape, source, target, method, metric):
+    matrix = np.reshape(matrix, matrix_shape)
+    source_corrected = colour_correction(source, matrix, method)
 
-    pass
+    return colour_distance(source_corrected, target, metric)
 
+# Add linearise pre-step
+def colour_correction_solver(source, target, method):
+    matrix = identity_matrix(method)
 
-def colour_correction_solver(source, target, degree=1):
-    matrix = matrix_colour_correction_Finlayson2015(source, target, degree)
+    # First Stage: MSE
+    # Fastest optimisation speed with least accuracy
+    solve_RMSE = least_squares(solve_fn, matrix.flatten(), verbose=2, ftol=1e-5, args=(matrix.shape,
+        source, target, method, "MSE"))
 
+    # Second Stage: Weighted Euclidean
+    # Moderate optimisation speed with good accuracy
+    solve_euclidean = least_squares(solve_fn, solve_RMSE.x, verbose=2, args=(matrix.shape,
+        source, target, method, "Weighted Euclidean"))
 
-    pass
+    # Third Stage: Delta E
+    # Slowest optimisation speed, used to check results
+    solve_Delta_E = least_squares(solve_fn, solve_euclidean.x, verbose=2, args=(matrix.shape,
+        source, target, method, "Delta E"))
 
-def root_polynomial_colour_correction_solver(source, target, degree=3):
-    matrix = matrix_colour_correction_Finlayson2015(source, target, degree)
-
-
-    pass
-
-def tetrahedral_colour_correction_solver(source, target):
-    matrix = np.array([[1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 1, 1], [0, 0, 1], [1, 0, 1]])
-
-    pass
+    return np.reshape(solve_Delta_E.x, matrix.shape)
 
 def rbf_interpolation(source, target, cube_size):
     """
@@ -49,25 +56,5 @@ def rbf_interpolation(source, target, cube_size):
                 values.append(xalglib.rbfcalc(model, [r, g, b]))
 
     return values
-
-MATRIX_METHODS = {
-    'CCM': colour_correction_solver,
-    'RPCC': root_polynomial_colour_correction_solver,
-    'TCC': tetrahedral_colour_correction_solver
-}
-
-LUT_METHODS = {
-    'RBF': rbf_interpolation
-}
-
-def curves_solver(source, target, method='RBF', **kwargs):
-    pass
-
-def matrix_solver(source, target, method='CCM', **kwargs):
-    pass
-
-def LUT_solver(source, target, method='RBF', **kwargs):
-    pass
-
 
 

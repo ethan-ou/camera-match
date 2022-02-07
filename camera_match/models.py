@@ -1,24 +1,36 @@
 import numpy as np
-
 from colour.characterisation import polynomial_expansion_Finlayson2015
 
-def colour_correction(RGB, matrix, degree=1):
-    shape = RGB.shape
 
+def colour_correction(RGB, matrix, method="Root Polynomial 2nd Degree"):
+    if method == "Linear":
+        return root_polynomial_colour_correction(RGB, matrix, 1)
+    elif method == "Root Polynomial 2nd Degree":
+        return root_polynomial_colour_correction(RGB, matrix, 2)
+    elif method == "Root Polynomial 3rd Degree":
+        return root_polynomial_colour_correction(RGB, matrix, 3)
+    elif method == "Tetrahedral":
+        return tetrahedral_colour_correction(RGB, matrix)
+    else:
+        raise ValueError("Method not found")
+
+def identity_matrix(method):
+    if method == "Linear":
+        return np.identity(3)
+    elif method == "Root Polynomial 2nd Degree":
+        return np.hstack((np.identity(3), np.zeros((3, 3))))
+    elif method == "Root Polynomial 3rd Degree":
+        return np.hstack((np.identity(3), np.zeros((3, 10))))
+    elif method == "Tetrahedral":
+        return np.array([[1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 1, 1], [0, 0, 1], [1, 0, 1]])
+    else:
+        raise ValueError("Method not found")
+
+def root_polynomial_colour_correction(RGB, matrix, degree=2):
+    shape = RGB.shape
     RGB = np.reshape(RGB, (-1, 3))
 
-    RGB_e = polynomial_expansion_Finlayson2015(RGB, degree,
-                                               root_polynomial_expansion=True)
-
-    return np.reshape(np.transpose(np.dot(matrix, np.transpose(RGB_e))), shape)
-
-def root_polynomial_colour_correction(RGB, matrix, degree=3):
-    shape = RGB.shape
-
-    RGB = np.reshape(RGB, (-1, 3))
-
-    RGB_e = polynomial_expansion_Finlayson2015(RGB, degree,
-                                               root_polynomial_expansion=True)
+    RGB_e = polynomial_expansion_Finlayson2015(RGB, degree, root_polynomial_expansion=True)
 
     return np.reshape(np.transpose(np.dot(matrix, np.transpose(RGB_e))), shape)
 
