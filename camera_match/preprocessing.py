@@ -1,4 +1,5 @@
 import numpy as np
+from metrics import find_delta_E
 
 def remove_outlier_patches(source, target, max_delta_E=10):
     delta_E = find_delta_E(source, target)

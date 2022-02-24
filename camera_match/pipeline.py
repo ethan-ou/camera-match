@@ -1,57 +1,28 @@
 from colour import cctf_decoding, cctf_encoding
 
-def curves_pipeline(source_gamma, target_gamma, curves='RBF'):
-    return [
-        {'transform': 'curves', 'type': curves},
-        {'transform': 'gamma_decode', 'type': source_gamma},
-        {'transform': 'gamma_encode', 'type': target_gamma},
-        {'solver': 'curves'},
-    ]
+class Pipeline():
+    def __init__(self, nodes):
+        for node in nodes:
+            if node is not None:
+                if not isinstance(node, Node):
+                    raise TypeError(f"{node} is not a Node.")
 
-def matrix_pipeline(source_gamma, target_gamma, matrix='RPCC'):
-    return [
-        {'transform': 'gamma_decode', 'type': source_gamma},
-        {'transform': 'matrix', 'type': matrix},
-        {'transform': 'gamma_encode', 'type': target_gamma},
-        {'solver': 'matrix'}
-    ]
+        self.nodes = nodes
 
-def nonlinear_matrix_pipeline(source_gamma, target_gamma, matrix='RPCC'):
-    return [
-        {'transform': 'gamma_decode', 'type': source_gamma},
-        {'transform': 'gamma_encode', 'type': target_gamma},
-        {'transform': 'matrix', 'type': matrix},
-        {'solver': 'matrix'}
-    ]
+    def solve(self, source, target):
+        pass
 
-def interpolation_pipeline(source_gamma, target_gamma, interpolation='RBF'):
-    return [
-        {'transform': 'gamma_decode', 'type': source_gamma},
-        {'transform': 'gamma_encode', 'type': target_gamma},
-        {'transform': 'interpolation', 'type': interpolation},
-        {'solver': 'interpolation'}
-    ]
+    def apply(self, RGB):
+        pass
 
-PIPELINE_STEPS = {
-    'gamma_decode': cctf_decoding,
-    'gamma_encode': cctf_encoding,
-    'matrix': None,
-    'curves': None,
-    'interpolation': None,
-}
-
-def pipeline_creator(source, target, source_gamma, target_gamma, pipeline_type='interpolation',
-    curves='RBF', matrix='RPCC', interpolation='RBF'):
-
-    pass
-
-def pipeline_reader(source, target, source_gamma, target_gamma, pipeline):
-    for step in pipeline:
-        if 'transform' in step:
-            if step['transform'] == 'curves':
+    def __repr__(self):
+        return f"<{self.__class__.__name__} nodes={repr(self.plugins)}>"
 
 
+Pipeline([
+    Curves(),
+    CST(),
+    RootPolynomial(),
+    CST(),
+]).solve(source, target).process(source)
 
-            pass
-        elif 'solver' in step:
-            pass
