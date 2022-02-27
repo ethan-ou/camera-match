@@ -2,16 +2,14 @@ from colour import sRGB_to_XYZ, XYZ_to_Lab, delta_E
 import numpy as np
 
 def colour_distance(source, target, metric):
-    if metric == "MSE":
-        return MSE(source, target)
-    elif metric == "Weighted Euclidean":
-        return mean_weighted_euclidean(source, target)
-    elif metric == "Delta E":
-        return mean_delta_E(source, target)
-    elif metric == "Delta E Power":
-        return mean_delta_E_power(source, target)
-    else:
-        raise ValueError("Metric not found")
+    distance_metrics = {
+        "MSE": MSE,
+        "Weighted Euclidean": mean_weighted_euclidean,
+        "Delta E": mean_delta_E,
+        "Delta E Power": mean_delta_E_power
+    }
+
+    return distance_metrics[metric](source, target)
 
 # Use MSE over RMSE due to performance
 # Reduces time by 10-15%

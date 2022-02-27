@@ -1,6 +1,35 @@
-from abc import ABC, abstractmethod
 import numpy as np
 from colour import polynomial_expansion_Finlayson2015
+from xalglib import xalglib
+from scipy.optimize import least_squares
+from ..metrics import colour_distance
+
+
+def matrix_solver(node, source, target):
+    def solve_fn(matrix, node, source, target, metric):
+        matrix = np.reshape(matrix, node.matrix.shape)
+        node.matrix = matrix
+        source = node.apply(source)
+
+        return colour_distance(source, target, metric)
+
+    # First Stage: MSE
+    # Fastest optimisation speed with least accuracy
+    solve_RMSE = least_squares(solve_fn, node.matrix.flatten(), verbose=2, ftol=1e-5,
+                            args=(node, source, target, "MSE"))
+
+    # Second Stage: Weighted Euclidean
+    # Moderate optimisation speed with good accuracy
+    solve_euclidean = least_squares(solve_fn, solve_RMSE.x, verbose=2, ftol=1e-5,
+                                    args=(node, source, target, "Weighted Euclidean"))
+
+    # Third Stage: Delta E Power
+    # Slowest optimisation speed, used to check results
+    solve_Delta_E = least_squares(solve_fn, solve_euclidean.x, verbose=2, ftol=1e-5,
+                                args=(node, source, target, "Delta E Power"))
+
+    return np.reshape(solve_Delta_E.x, node.matrix.shape)
+
 
 class LinearMatrix:
     def __init__(self, matrix=None):
@@ -11,6 +40,11 @@ class LinearMatrix:
 
     def identity(self):
         return np.identity(3)
+
+    def solve(self, source, target):
+        self.matrix = matrix_solver(self, source, target)
+        source = self.apply(source)
+        return (source, target)
 
     def apply(self, RGB):
         shape = RGB.shape
@@ -41,6 +75,11 @@ class RootPolynomialMatrix:
 
         return polynomial_expansion[self.degree]
 
+    def solve(self, source, target):
+        self.matrix = matrix_solver(self, source, target)
+        source = self.apply(source)
+        return (source, target)
+
     def apply(self, RGB):
         shape = RGB.shape
         RGB = np.reshape(RGB, (-1, 3))
@@ -59,6 +98,11 @@ class TetrahedralMatrix:
 
     def identity(self):
         return np.array([[1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 1, 1], [0, 0, 1], [1, 0, 1]])
+
+    def solve(self, source, target):
+        self.matrix = matrix_solver(self, source, target)
+        source = self.apply(source)
+        return (source, target)
 
     def apply(self, RGB):
         # Return indicies of boolean comparison
