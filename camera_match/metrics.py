@@ -1,15 +1,20 @@
 from colour import sRGB_to_XYZ, XYZ_to_Lab, delta_E
 import numpy as np
+from numpy.typing import NDArray
 
-def colour_distance(source, target, metric):
-    distance_metrics = {
+from typing import Union, Literal, Any
+
+DifferenceMetric = Union[Literal["MSE", "Weighted Euclidean", "Delta E", "Delta E Power"], str]
+
+def colour_difference(source: NDArray[Any], target: NDArray[Any], metric: DifferenceMetric) -> Any:
+    difference_metrics = {
         "MSE": MSE,
         "Weighted Euclidean": mean_weighted_euclidean,
         "Delta E": mean_delta_E,
         "Delta E Power": mean_delta_E_power
     }
 
-    return distance_metrics[metric](source, target)
+    return difference_metrics[metric](source, target)
 
 # Use MSE over RMSE due to performance
 # Reduces time by 10-15%

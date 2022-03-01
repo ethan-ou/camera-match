@@ -2,16 +2,20 @@ import numpy as np
 from colour import polynomial_expansion_Finlayson2015
 from xalglib import xalglib
 from scipy.optimize import least_squares
-from ..metrics import colour_distance
+from camera_match import Node
+from camera_match.metrics import colour_difference
 
+from typing import Optional, Any, Tuple
+from numpy.typing import NDArray
+from camera_match.metrics import DifferenceMetric
 
-def matrix_solver(node, source, target):
-    def solve_fn(matrix, node, source, target, metric):
+def matrix_solver(node, source: NDArray[Any], target: NDArray[Any]) -> NDArray[Any]:
+    def solve_fn(matrix: NDArray[Any], node, source: NDArray[Any], target: NDArray[Any], metric: DifferenceMetric):
         matrix = np.reshape(matrix, node.matrix.shape)
         node.matrix = matrix
         source = node.apply(source)
 
-        return colour_distance(source, target, metric)
+        return colour_difference(source, target, metric)
 
     # First Stage: MSE
     # Fastest optimisation speed with least accuracy
@@ -31,29 +35,29 @@ def matrix_solver(node, source, target):
     return np.reshape(solve_Delta_E.x, node.matrix.shape)
 
 
-class LinearMatrix:
-    def __init__(self, matrix=None):
+class LinearMatrix(Node):
+    def __init__(self, matrix: Optional[NDArray[Any]] = None):
         self.matrix = matrix
 
         if self.matrix is None:
             self.matrix = self.identity()
 
-    def identity(self):
+    def identity(self) -> NDArray[Any]:
         return np.identity(3)
 
-    def solve(self, source, target):
+    def solve(self, source: NDArray[Any], target: NDArray[Any]) -> Tuple[NDArray[Any], NDArray[Any]]:
         self.matrix = matrix_solver(self, source, target)
         source = self.apply(source)
         return (source, target)
 
-    def apply(self, RGB):
+    def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
         shape = RGB.shape
         RGB = np.reshape(RGB, (-1, 3))
         return np.reshape(np.transpose(np.dot(self.matrix, np.transpose(RGB))), shape)
 
 
-class RootPolynomialMatrix:
-    def __init__(self, matrix=None, degree=2):
+class RootPolynomialMatrix(Node):
+    def __init__(self, matrix: Optional[NDArray[Any]] = None, degree: int=2):
         if degree > 4 or degree < 1:
             raise ValueError(
                 f"Degree for Root Polynomial Matrix must be between 1 and 4."
@@ -63,9 +67,9 @@ class RootPolynomialMatrix:
         self.degree = degree
 
         if self.matrix is None:
-            self.matrix = self.identity(degree)
+            self.matrix = self.identity(self.degree)
 
-    def identity(self):
+    def identity(self, degree: int) -> NDArray[Any]:
         polynomial_expansion = {
             1: np.identity(3),
             2: np.hstack((np.identity(3), np.zeros((3, 3)))),
@@ -73,14 +77,14 @@ class RootPolynomialMatrix:
             4: np.hstack((np.identity(3), np.zeros((3, 19)))),
         }
 
-        return polynomial_expansion[self.degree]
+        return polynomial_expansion[degree]
 
-    def solve(self, source, target):
+    def solve(self, source: NDArray[Any], target: NDArray[Any]) -> Tuple[NDArray[Any], NDArray[Any]]:
         self.matrix = matrix_solver(self, source, target)
         source = self.apply(source)
         return (source, target)
 
-    def apply(self, RGB):
+    def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
         shape = RGB.shape
         RGB = np.reshape(RGB, (-1, 3))
 
@@ -89,22 +93,22 @@ class RootPolynomialMatrix:
         return np.reshape(np.transpose(np.dot(self.matrix, np.transpose(RGB_e))), shape)
 
 
-class TetrahedralMatrix:
-    def __init__(self, matrix=None):
+class TetrahedralMatrix(Node):
+    def __init__(self, matrix: Optional[NDArray[Any]] = None):
         self.matrix = matrix
 
         if self.matrix is None:
             self.matrix = self.identity()
 
-    def identity(self):
+    def identity(self) -> NDArray[Any]:
         return np.array([[1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 1, 1], [0, 0, 1], [1, 0, 1]])
 
-    def solve(self, source, target):
+    def solve(self, source: NDArray[Any], target: NDArray[Any]) -> Tuple[NDArray[Any], NDArray[Any]]:
         self.matrix = matrix_solver(self, source, target)
         source = self.apply(source)
         return (source, target)
 
-    def apply(self, RGB):
+    def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
         # Return indicies of boolean comparison
         # e.g. a = [0, 1, 3], b = [1, 1, 1]
         # i((a > b)) -> [1, 2]

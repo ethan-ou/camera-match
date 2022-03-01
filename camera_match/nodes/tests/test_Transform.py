@@ -1,5 +1,5 @@
 import numpy as np
-from ...nodes import CST
+from camera_match import CST
 
 class TestCST:
     def test_gamma_encoding(self):

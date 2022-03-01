@@ -1,11 +1,12 @@
 import numpy as np
+from camera_match.nodes import Node
 import xalglib
 
-class RBF:
+class RBF(Node):
     def __init__(self, size=33, LUT=None, library="alglib"):
         self.size = size
-        self.LUT = None
-        self.library = "alglib"
+        self.LUT = LUT
+        self.library = library
 
     # Implement RBF from scipy
     def solve(self, source, target):

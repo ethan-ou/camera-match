@@ -1,5 +1,5 @@
 class Pipeline:
-    def __init__(self, nodes):
+    def __init__(self, nodes=None):
         self.nodes = nodes
 
     def solve(self, source, target):
