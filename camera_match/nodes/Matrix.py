@@ -1,8 +1,7 @@
 import numpy as np
-from colour import polynomial_expansion_Finlayson2015
-from xalglib import xalglib
+from colour.characterisation import polynomial_expansion_Finlayson2015, matrix_colour_correction_Finlayson2015
 from scipy.optimize import least_squares
-from camera_match import Node
+from .Node import Node
 from camera_match.metrics import colour_difference
 
 from typing import Optional, Any, Tuple
@@ -19,20 +18,20 @@ def matrix_solver(node, source: NDArray[Any], target: NDArray[Any]) -> NDArray[A
 
     # First Stage: MSE
     # Fastest optimisation speed with least accuracy
-    solve_RMSE = least_squares(solve_fn, node.matrix.flatten(), verbose=2, ftol=1e-5,
+    solve_RMSE = least_squares(solve_fn, node.matrix.flatten(), verbose=1, ftol=1e-4,
                             args=(node, source, target, "MSE"))
 
     # Second Stage: Weighted Euclidean
     # Moderate optimisation speed with good accuracy
-    solve_euclidean = least_squares(solve_fn, solve_RMSE.x, verbose=2, ftol=1e-5,
+    solve_euclidean = least_squares(solve_fn, solve_RMSE.x, verbose=1, ftol=1e-6,
                                     args=(node, source, target, "Weighted Euclidean"))
 
-    # Third Stage: Delta E Power
-    # Slowest optimisation speed, used to check results
-    solve_Delta_E = least_squares(solve_fn, solve_euclidean.x, verbose=2, ftol=1e-5,
-                                args=(node, source, target, "Delta E Power"))
+    # Test Stage: Delta E Power
+    # Use for testing, Weighted Euclidean is faster and gives similar results
+    # solve_Delta_E = least_squares(solve_fn, solve_euclidean.x, verbose=1, ftol=1e-10,
+    #                                 args=(node, source, target, "Delta E Power"))
 
-    return np.reshape(solve_Delta_E.x, node.matrix.shape)
+    return np.reshape(solve_euclidean.x, node.matrix.shape)
 
 
 class LinearMatrix(Node):
@@ -46,6 +45,9 @@ class LinearMatrix(Node):
         return np.identity(3)
 
     def solve(self, source: NDArray[Any], target: NDArray[Any]) -> Tuple[NDArray[Any], NDArray[Any]]:
+        # Setting Matrix with Moore-Penrose solution for speed
+        self.matrix = matrix_colour_correction_Finlayson2015(source, target, degree=1)
+
         self.matrix = matrix_solver(self, source, target)
         source = self.apply(source)
         return (source, target)
@@ -80,6 +82,9 @@ class RootPolynomialMatrix(Node):
         return polynomial_expansion[degree]
 
     def solve(self, source: NDArray[Any], target: NDArray[Any]) -> Tuple[NDArray[Any], NDArray[Any]]:
+        # Setting Matrix with Moore-Penrose solution for speed
+        self.matrix = matrix_colour_correction_Finlayson2015(source, target, degree=self.degree, root_polynomial_expansion=True)
+
         self.matrix = matrix_solver(self, source, target)
         source = self.apply(source)
         return (source, target)

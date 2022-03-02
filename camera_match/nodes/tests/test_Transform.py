@@ -41,7 +41,7 @@ class TestCST:
         cst = CST(source_gamma="ALEXA Log C", target_gamma="S-Log3",
                 source_colourspace="ACES2065-1", target_colourspace="sRGB")
 
-        np.testing.assert_allclose(cst.apply(RGB_A), RGB_B)
+        np.testing.assert_allclose(cst.apply(RGB_A), RGB_B, rtol=1e-06)
 
     def test_solve(self):
         RGB_A = np.array([0.092809000000000, 0.391006832034084, 0.570631558120417])

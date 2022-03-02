@@ -1,5 +1,5 @@
 from colour import cctf_decoding, cctf_encoding, RGB_to_RGB, RGB_COLOURSPACES
-from camera_match import Node
+from .Node import Node
 from numpy.typing import NDArray
 from typing import Any, Tuple, Optional
 
