@@ -1,46 +1,46 @@
+from colour import LUT3D
 import numpy as np
 from .Node import Node
-from xalglib import xalglib
+from colour.algebra import table_interpolation_tetrahedral
+import itertools
+
+from typing import Optional, Any, Tuple
+from numpy.typing import NDArray
+
+# xalglib only available in Windows & Linux(?)
+try:
+    from xalglib import xalglib
+except ImportError:
+    import warnings
+    warnings.warn("RBF library cannot be loaded.", ImportWarning)
 
 class RBF(Node):
-    def __init__(self, size=33, LUT=None, library="alglib"):
+    def __init__(self, size: int = 33, init_radius: float = 5.0, num_layers: int = 10, penalty: float = 0.0):
         self.size = size
-        self.LUT = LUT
-        self.library = library
+        self.LUT = None
 
-    # Implement RBF from scipy
-    def solve(self, source, target):
-        """
-        Takes a 2D array of RGB triplet points as both args.
-        Returns an array of interpolated grid values.
-        """
+        self.init_radius = init_radius
+        self.num_layers = num_layers
+        self.penalty = penalty
+
+    def solve(self, source: NDArray[Any], target: NDArray[Any]) -> Tuple[NDArray[Any], NDArray[Any]]:
         data = np.hstack((source, target))
 
         model = xalglib.rbfcreate(3, 3)
         xalglib.rbfsetpoints(model, data.tolist())
-
-        xalglib.rbfsetalgohierarchical(model, 5.0, 5, 0.0)
+        xalglib.rbfsetalgohierarchical(model, self.init_radius, self.num_layers, self.penalty)
         xalglib.rbfbuildmodel(model)
 
-        grid = np.linspace(0, 1, self.size)
-        values = []
+        LUT_table = LUT3D.linear_table(self.size)
 
-        # Haven't figured out how to get triplets from the
-        # official gridcalc3v function, so doing it manually, so it's slower.
-        for b in grid:
-            for g in grid:
-                for r in grid:
-                    values.append(xalglib.rbfcalc(model, [r, g, b]))
+        for x, y, z in itertools.product(range(self.size), range(self.size), range(self.size)):
+            LUT_table[x][y][z] = xalglib.rbfcalc(model, [x / self.size, y / self.size, z / self.size])
 
-        # TODO: Add LUT from colour
+        self.LUT = LUT3D(table=LUT_table)
+        return (self.apply(source), target)
 
-        self.LUT = values
-
-        return values
-
-    def apply(self, RGB):
+    def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
         if self.LUT is None:
             return RGB
 
-
-
+        return self.LUT.apply(RGB, interpolator=table_interpolation_tetrahedral)

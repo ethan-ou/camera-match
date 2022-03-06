@@ -9,7 +9,8 @@ from .nodes import (
     CST,
     LinearMatrix,
     RootPolynomialMatrix,
-    TetrahedralMatrix
+    TetrahedralMatrix,
+    RBF
 )
 
 from .pipeline import (

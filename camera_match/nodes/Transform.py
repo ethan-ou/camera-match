@@ -21,12 +21,10 @@ class CST(Node):
         self.apply_to_target = apply_to_target
 
     def solve(self, source: NDArray[Any], target: NDArray[Any]) -> Tuple[NDArray[Any], NDArray[Any]]:
-        source = self.apply(source)
-
         if self.apply_to_target is True:
             target = self.apply(target)
 
-        return (source, target)
+        return (self.apply(source), target)
 
 
     def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:

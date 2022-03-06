@@ -23,7 +23,7 @@ def matrix_solver(node, source: NDArray[Any], target: NDArray[Any]) -> NDArray[A
 
     # Second Stage: Weighted Euclidean
     # Moderate optimisation speed with good accuracy
-    solve_euclidean = least_squares(solve_fn, solve_RMSE.x, verbose=1, ftol=1e-6,
+    solve_euclidean = least_squares(solve_fn, solve_RMSE.x, verbose=1, ftol=1e-5,
                                     args=(node, source, target, "Weighted Euclidean"))
 
     # Test Stage: Delta E Power
@@ -49,8 +49,7 @@ class LinearMatrix(Node):
         self.matrix = matrix_colour_correction_Finlayson2015(source, target, degree=1)
 
         self.matrix = matrix_solver(self, source, target)
-        source = self.apply(source)
-        return (source, target)
+        return (self.apply(source), target)
 
     def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
         shape = RGB.shape
@@ -86,8 +85,7 @@ class RootPolynomialMatrix(Node):
         self.matrix = matrix_colour_correction_Finlayson2015(source, target, degree=self.degree, root_polynomial_expansion=True)
 
         self.matrix = matrix_solver(self, source, target)
-        source = self.apply(source)
-        return (source, target)
+        return (self.apply(source), target)
 
     def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
         shape = RGB.shape
@@ -110,8 +108,7 @@ class TetrahedralMatrix(Node):
 
     def solve(self, source: NDArray[Any], target: NDArray[Any]) -> Tuple[NDArray[Any], NDArray[Any]]:
         self.matrix = matrix_solver(self, source, target)
-        source = self.apply(source)
-        return (source, target)
+        return (self.apply(source), target)
 
     def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
         # Return indicies of boolean comparison

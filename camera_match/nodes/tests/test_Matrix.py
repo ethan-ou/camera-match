@@ -79,7 +79,7 @@ class TestLinearMatrix:
                     [-0.0449551,  0.1242455,  0.9705195]
                 ]
             ),
-            atol=0.01
+            atol=0.02
         )
 
 
