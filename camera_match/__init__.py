@@ -10,7 +10,8 @@ from .nodes import (
     LinearMatrix,
     RootPolynomialMatrix,
     TetrahedralMatrix,
-    RBF
+    RBF,
+    CurvesInterpolation
 )
 
 from .pipeline import (

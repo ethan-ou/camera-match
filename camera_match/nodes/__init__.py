@@ -7,7 +7,8 @@ from .Transform import (
     CST
 )
 from .LUT import (
-    RBF
+    RBF,
+    CurvesInterpolation
 )
 from .Node import (
     Node

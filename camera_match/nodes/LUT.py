@@ -1,8 +1,9 @@
 from colour import LUT3D
 import numpy as np
-from .Node import Node
 from colour.algebra import table_interpolation_tetrahedral
 import itertools
+from scipy.interpolate import PchipInterpolator
+from .Node import Node
 
 from typing import Optional, Any, Tuple
 from numpy.typing import NDArray
@@ -44,3 +45,37 @@ class RBF(Node):
             return RGB
 
         return self.LUT.apply(RGB, interpolator=table_interpolation_tetrahedral)
+
+class CurvesInterpolation(Node):
+    def __init__(self, interpolator = PchipInterpolator, **kwargs):
+        self.interpolator = interpolator
+        self.kwargs = kwargs
+        self.curve = None
+
+    def solve(self, source: NDArray[Any], target: NDArray[Any]) -> Tuple[NDArray[Any], NDArray[Any]]:
+        s_R, s_G, s_B = np.reshape(source, (-1, 3)).T
+        t_R, t_G, t_B = np.reshape(target, (-1, 3)).T
+
+        R_sort = s_R.argsort()
+        G_sort = s_G.argsort()
+        B_sort = s_B.argsort()
+
+        R_curve = self.interpolator(s_R[R_sort], t_R[R_sort], **self.kwargs)
+        G_curve = self.interpolator(s_G[G_sort], t_G[G_sort], **self.kwargs)
+        B_curve = self.interpolator(s_B[B_sort], t_B[B_sort], **self.kwargs)
+
+        def apply_curve(RGB: NDArray[Any]) -> NDArray[Any]:
+            shape = RGB.shape
+            R, G, B = np.reshape(RGB, (-1, 3)).T
+
+            return np.reshape(np.array([R_curve(R), G_curve(G), B_curve(B)]).T, shape)
+
+        self.curve = apply_curve
+
+        return (self.apply(source), target)
+
+    def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
+        if self.curve is None:
+            return RGB
+
+        return self.curve(RGB)
