@@ -7,9 +7,12 @@ from .Transform import (
     CST
 )
 from .LUT import (
-    RBF,
-    CurvesInterpolation
+    RBF
 )
 from .Node import (
     Node
+)
+from .Curves import (
+    CurvesInterpolation,
+    CurvesEMOR
 )

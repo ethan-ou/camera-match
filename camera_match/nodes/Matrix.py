@@ -18,12 +18,12 @@ def matrix_solver(node, source: NDArray[Any], target: NDArray[Any]) -> NDArray[A
 
     # First Stage: MSE
     # Fastest optimisation speed with least accuracy
-    solve_RMSE = least_squares(solve_fn, node.matrix.flatten(), verbose=1, ftol=1e-4,
+    solve_RMSE = least_squares(solve_fn, node.matrix.flatten(), verbose=1, loss='soft_l1', ftol=1e-4,
                             args=(node, source, target, "MSE"))
 
     # Second Stage: Weighted Euclidean
     # Moderate optimisation speed with good accuracy
-    solve_euclidean = least_squares(solve_fn, solve_RMSE.x, verbose=1, ftol=1e-5,
+    solve_euclidean = least_squares(solve_fn, solve_RMSE.x, verbose=1, loss='soft_l1', ftol=1e-5,
                                     args=(node, source, target, "Weighted Euclidean"))
 
     # Test Stage: Delta E Power

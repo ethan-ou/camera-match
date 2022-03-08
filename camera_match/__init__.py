@@ -11,7 +11,8 @@ from .nodes import (
     RootPolynomialMatrix,
     TetrahedralMatrix,
     RBF,
-    CurvesInterpolation
+    CurvesInterpolation,
+    CurvesEMOR
 )
 
 from .pipeline import (
