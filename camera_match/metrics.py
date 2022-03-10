@@ -4,11 +4,12 @@ from numpy.typing import NDArray
 
 from typing import Union, Literal, Any
 
-DifferenceMetric = Union[Literal["MSE", "Weighted Euclidean", "Delta E", "Delta E Power"], str]
+DifferenceMetric = Union[Literal["MSE", "RMSE", "Weighted Euclidean", "Delta E", "Delta E Power"], str]
 
 def colour_difference(source: NDArray[Any], target: NDArray[Any], metric: DifferenceMetric) -> Any:
     difference_metrics = {
         "MSE": MSE,
+        "RMSE": RMSE,
         "Weighted Euclidean": mean_weighted_euclidean,
         "Delta E": mean_delta_E,
         "Delta E Power": mean_delta_E_power
@@ -16,10 +17,11 @@ def colour_difference(source: NDArray[Any], target: NDArray[Any], metric: Differ
 
     return difference_metrics[metric](source, target)
 
-# Use MSE over RMSE due to performance
-# Reduces time by 10-15%
 def MSE(source, target):
     return np.mean((source-target)**2)
+
+def RMSE(source, target):
+    return np.sqrt(np.mean((source-target)**2))
 
 def mean_weighted_euclidean(source, target):
     return np.mean(find_weighted_euclidean(source, target))

@@ -1,5 +1,5 @@
 from .emor import (
-    EMOR_MAX_FUNCTIONS,
+    EMOR_MAX_FACTORS,
     EMOR_LENGTH,
     EMOR_X,
     EMOR_F0,

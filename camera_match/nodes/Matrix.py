@@ -1,38 +1,10 @@
 import numpy as np
 from colour.characterisation import polynomial_expansion_Finlayson2015, matrix_colour_correction_Finlayson2015
-from scipy.optimize import least_squares
 from .Node import Node
-from camera_match.metrics import colour_difference
 
-from typing import Optional, Any, Tuple
+from typing import Optional, Any, Tuple, Union
 from numpy.typing import NDArray
-from camera_match.metrics import DifferenceMetric
-
-def matrix_solver(node, source: NDArray[Any], target: NDArray[Any]) -> NDArray[Any]:
-    def solve_fn(matrix: NDArray[Any], node, source: NDArray[Any], target: NDArray[Any], metric: DifferenceMetric):
-        matrix = np.reshape(matrix, node.matrix.shape)
-        node.matrix = matrix
-        source = node.apply(source)
-
-        return colour_difference(source, target, metric)
-
-    # First Stage: MSE
-    # Fastest optimisation speed with least accuracy
-    solve_RMSE = least_squares(solve_fn, node.matrix.flatten(), verbose=1, loss='soft_l1', ftol=1e-4,
-                            args=(node, source, target, "MSE"))
-
-    # Second Stage: Weighted Euclidean
-    # Moderate optimisation speed with good accuracy
-    solve_euclidean = least_squares(solve_fn, solve_RMSE.x, verbose=1, loss='soft_l1', ftol=1e-5,
-                                    args=(node, source, target, "Weighted Euclidean"))
-
-    # Test Stage: Delta E Power
-    # Use for testing, Weighted Euclidean is faster and gives similar results
-    # solve_Delta_E = least_squares(solve_fn, solve_euclidean.x, verbose=1, ftol=1e-10,
-    #                                 args=(node, source, target, "Delta E Power"))
-
-    return np.reshape(solve_euclidean.x, node.matrix.shape)
-
+from camera_match.optimise import optimise_matrix
 
 class LinearMatrix(Node):
     def __init__(self, matrix: Optional[NDArray[Any]] = None):
@@ -41,20 +13,25 @@ class LinearMatrix(Node):
         if self.matrix is None:
             self.matrix = self.identity()
 
-    def identity(self) -> NDArray[Any]:
-        return np.identity(3)
-
     def solve(self, source: NDArray[Any], target: NDArray[Any]) -> Tuple[NDArray[Any], NDArray[Any]]:
         # Setting Matrix with Moore-Penrose solution for speed
         self.matrix = matrix_colour_correction_Finlayson2015(source, target, degree=1)
 
-        self.matrix = matrix_solver(self, source, target)
+        self.matrix = optimise_matrix(self.apply_matrix, self.matrix, source, target)
         return (self.apply(source), target)
 
     def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
+        return self.apply_matrix(RGB, self.matrix)
+
+    @staticmethod
+    def identity() -> NDArray[Any]:
+        return np.identity(3)
+
+    @staticmethod
+    def apply_matrix(RGB: NDArray[Any], matrix: NDArray[Any]) -> NDArray[Any]:
         shape = RGB.shape
         RGB = np.reshape(RGB, (-1, 3))
-        return np.reshape(np.transpose(np.dot(self.matrix, np.transpose(RGB))), shape)
+        return np.reshape(np.transpose(np.dot(matrix, np.transpose(RGB))), shape)
 
 
 class RootPolynomialMatrix(Node):
@@ -70,7 +47,18 @@ class RootPolynomialMatrix(Node):
         if self.matrix is None:
             self.matrix = self.identity(self.degree)
 
-    def identity(self, degree: int) -> NDArray[Any]:
+    def solve(self, source: NDArray[Any], target: NDArray[Any]) -> Tuple[NDArray[Any], NDArray[Any]]:
+        # Setting Matrix with Moore-Penrose solution for speed
+        self.matrix = matrix_colour_correction_Finlayson2015(source, target, degree=self.degree, root_polynomial_expansion=True)
+
+        self.matrix = optimise_matrix(lambda RGB, matrix : self.apply_matrix(RGB, matrix, self.degree), self.matrix, source, target)
+        return (self.apply(source), target)
+
+    def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
+        return self.apply_matrix(RGB, self.matrix, self.degree)
+
+    @staticmethod
+    def identity(degree: int) -> NDArray[Any]:
         polynomial_expansion = {
             1: np.identity(3),
             2: np.hstack((np.identity(3), np.zeros((3, 3)))),
@@ -80,20 +68,14 @@ class RootPolynomialMatrix(Node):
 
         return polynomial_expansion[degree]
 
-    def solve(self, source: NDArray[Any], target: NDArray[Any]) -> Tuple[NDArray[Any], NDArray[Any]]:
-        # Setting Matrix with Moore-Penrose solution for speed
-        self.matrix = matrix_colour_correction_Finlayson2015(source, target, degree=self.degree, root_polynomial_expansion=True)
-
-        self.matrix = matrix_solver(self, source, target)
-        return (self.apply(source), target)
-
-    def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
+    @staticmethod
+    def apply_matrix(RGB: NDArray[Any], matrix: NDArray[Any], degree: int) -> NDArray[Any]:
         shape = RGB.shape
         RGB = np.reshape(RGB, (-1, 3))
 
-        RGB_e = polynomial_expansion_Finlayson2015(RGB, self.degree, root_polynomial_expansion=True)
+        RGB_e = polynomial_expansion_Finlayson2015(RGB, degree, root_polynomial_expansion=True)
 
-        return np.reshape(np.transpose(np.dot(self.matrix, np.transpose(RGB_e))), shape)
+        return np.reshape(np.transpose(np.dot(matrix, np.transpose(RGB_e))), shape)
 
 
 class TetrahedralMatrix(Node):
@@ -103,14 +85,19 @@ class TetrahedralMatrix(Node):
         if self.matrix is None:
             self.matrix = self.identity()
 
-    def identity(self) -> NDArray[Any]:
-        return np.array([[1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 1, 1], [0, 0, 1], [1, 0, 1]])
-
     def solve(self, source: NDArray[Any], target: NDArray[Any]) -> Tuple[NDArray[Any], NDArray[Any]]:
-        self.matrix = matrix_solver(self, source, target)
+        self.matrix = optimise_matrix(self.apply_matrix, self.matrix, source, target)
         return (self.apply(source), target)
 
     def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
+        return self.apply_matrix(RGB, self.matrix)
+
+    @staticmethod
+    def identity() -> NDArray[Any]:
+        return np.array([[1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 1, 1], [0, 0, 1], [1, 0, 1]])
+
+    @staticmethod
+    def apply_matrix(RGB: NDArray[Any], matrix: NDArray[Any]) -> NDArray[Any]:
         # Return indicies of boolean comparison
         # e.g. a = [0, 1, 3], b = [1, 1, 1]
         # i((a > b)) -> [1, 2]
@@ -131,7 +118,7 @@ class TetrahedralMatrix(Node):
         r, g, b = RGB.T
 
         wht = np.array([1, 1, 1])
-        red, yel, grn, cyn, blu, mag = self.matrix
+        red, yel, grn, cyn, blu, mag = matrix
 
         base_1 = r > g
         base_2 = ~(r > g)
@@ -152,3 +139,7 @@ class TetrahedralMatrix(Node):
         n_RGB[case_6] = t_matrix(case_6, r, (yel-grn), g, grn, b, (wht-yel))
 
         return n_RGB.reshape(shape)
+
+class MatrixSolver(Node):
+    def __init__(self, nodes: Union[Node, list[Node]]):
+        pass

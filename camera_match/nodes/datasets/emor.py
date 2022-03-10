@@ -1,6 +1,6 @@
 import numpy as np
 
-EMOR_MAX_FUNCTIONS = 11
+EMOR_MAX_FACTORS = 11
 EMOR_LENGTH = 1024
 
 EMOR_X = np.array(
