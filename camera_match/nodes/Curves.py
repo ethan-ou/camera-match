@@ -36,7 +36,7 @@ class CurvesInterpolation(Node):
             shape = RGB.shape
             R, G, B = np.reshape(RGB, (-1, 3)).T
 
-            return np.reshape(np.array([R_curve(R), G_curve(G), B_curve(B)]).T, shape)
+            return np.reshape(np.transpose([R_curve(R), G_curve(G), B_curve(B)]), shape)
 
         self.curve = apply_curve
 
@@ -95,7 +95,7 @@ class CurvesEMOR(Node):
 
         shape = RGB.shape
         R, G, B = np.reshape(RGB, (-1, 3)).T
-        return np.reshape(np.array([R_curve(R), G_curve(G), B_curve(B)]).T, shape)
+        return np.reshape(np.transpose([R_curve(R), G_curve(G), B_curve(B)]), shape)
 
     @staticmethod
     def _solve_pinv(source, target, degree):
@@ -103,11 +103,9 @@ class CurvesEMOR(Node):
         t_R, t_G, t_B = np.reshape(target, (-1, 3)).T
 
         def fit_channel(source, target, degree):
-            h = EMOR_H[0:degree, :]
-
             indicies = np.round(source * (EMOR_LENGTH - 1)).astype(np.int32)
             deviation = target - EMOR_F0[indicies]
-            model = h[:, indicies]
+            model = EMOR_H[0:degree, indicies]
 
             return np.dot(np.dot(np.linalg.pinv(np.dot(model, np.transpose(model))), model), deviation)
 
@@ -115,4 +113,4 @@ class CurvesEMOR(Node):
         G_curve = fit_channel(s_G, t_G, degree)
         B_curve = fit_channel(s_B, t_B, degree)
 
-        return np.array([R_curve, G_curve, B_curve]).T
+        return np.transpose([R_curve, G_curve, B_curve])

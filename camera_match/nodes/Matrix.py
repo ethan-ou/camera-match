@@ -20,7 +20,6 @@ class Gain(Node):
         self.matrix = optimise_matrix(self.apply_matrix, self.matrix, source, target)
         return (self.apply(source), target)
 
-
     def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
         return self.apply_matrix(RGB, self.matrix)
 
@@ -31,9 +30,9 @@ class Gain(Node):
     @staticmethod
     def apply_matrix(RGB: NDArray[Any], matrix: NDArray[Any]) -> NDArray[Any]:
         shape = RGB.shape
-        RGB = np.reshape(RGB, (-1, 3))
+        RGB = np.reshape(RGB, (-1, 3)).T
 
-        return np.reshape(np.transpose(np.multiply(matrix.reshape((3, 1)), np.transpose(RGB))), shape)
+        return np.reshape(np.transpose(np.multiply(matrix.reshape((3, 1)), RGB)), shape)
 
 
 class LinearMatrix(Node):
