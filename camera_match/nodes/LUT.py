@@ -16,20 +16,20 @@ except ImportError:
     warnings.warn("RBF library cannot be loaded.", ImportWarning)
 
 class RBF(Node):
-    def __init__(self, size: int = 33, init_radius: float = 5.0, num_layers: int = 10, penalty: float = 0.0):
+    def __init__(self, size: int=33, radius: float=5.0, layers: int=10, smoothing: float=0.001):
         self.size = size
         self.LUT = None
 
-        self.init_radius = init_radius
-        self.num_layers = num_layers
-        self.penalty = penalty
+        self.radius = radius
+        self.layers = layers
+        self.smoothing = smoothing
 
     def solve(self, source: NDArray[Any], target: NDArray[Any]) -> Tuple[NDArray[Any], NDArray[Any]]:
         data = np.hstack((source, target))
 
         model = xalglib.rbfcreate(3, 3)
         xalglib.rbfsetpoints(model, data.tolist())
-        xalglib.rbfsetalgohierarchical(model, self.init_radius, self.num_layers, self.penalty)
+        xalglib.rbfsetalgohierarchical(model, self.radius, self.layers, self.smoothing)
         xalglib.rbfbuildmodel(model)
 
         LUT_table = LUT3D.linear_table(self.size)

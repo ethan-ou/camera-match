@@ -72,7 +72,7 @@ class TestRBF:
         np.testing.assert_allclose(
             source,
             target,
-            atol=0.05
+            atol=0.06
         )
 
 
