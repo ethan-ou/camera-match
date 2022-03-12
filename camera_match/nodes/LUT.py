@@ -1,8 +1,6 @@
 from colour import LUT3D
 import numpy as np
 from colour.algebra import table_interpolation_tetrahedral
-import itertools
-from scipy.interpolate import PchipInterpolator
 from .Node import Node
 
 from typing import Optional, Any, Tuple
@@ -32,10 +30,12 @@ class RBF(Node):
         xalglib.rbfsetalgohierarchical(model, self.radius, self.layers, self.smoothing)
         xalglib.rbfbuildmodel(model)
 
-        LUT_table = LUT3D.linear_table(self.size)
+        grid = np.linspace(0, 1, self.size).tolist()
+        table = xalglib.rbfgridcalc3v(model, grid, self.size, grid, self.size, grid, self.size)
 
-        for x, y, z in itertools.product(range(self.size), range(self.size), range(self.size)):
-            LUT_table[x][y][z] = xalglib.rbfcalc(model, [x / self.size, y / self.size, z / self.size])
+        # xalglib outputs coordinates in (z, y, x). Swapping axis 0 and 2
+        # gives (x, y, z) which is needed for the LUT table.
+        LUT_table = np.reshape(table, (self.size, self.size, self.size, 3)).swapaxes(0, 2)
 
         self.LUT = LUT3D(table=LUT_table)
         return (self.apply(source), target)
