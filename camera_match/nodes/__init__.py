@@ -1,4 +1,5 @@
 from .Matrix import (
+    Gain,
     LinearMatrix,
     RootPolynomialMatrix,
     TetrahedralMatrix

@@ -7,6 +7,7 @@ __version__ = '0.1.0'
 from .nodes import (
     Node,
     CST,
+    Gain,
     LinearMatrix,
     RootPolynomialMatrix,
     TetrahedralMatrix,
