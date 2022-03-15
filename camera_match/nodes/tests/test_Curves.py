@@ -1,7 +1,33 @@
 import numpy as np
 from camera_match import (
+    Lift,
+    Gain,
     CurvesInterpolation,
     CurvesEMOR
+)
+
+LIFT_TEST = np.array(
+    [
+        [0.018124, 0.001943, 0.009145]
+    ]
+)
+
+LIFT_REFERENCE = np.array(
+    [
+        [0.000000, 0.000000, 0.000000]
+    ]
+)
+
+GAIN_TEST = np.array(
+    [
+        [0.904758, 0.651915, 0.614997]
+    ]
+)
+
+GAIN_REFERENCE = np.array(
+    [
+        [0.95, 0.95, 0.95]
+    ]
 )
 
 # From https://github.com/jandren/tone-curve-explorer/blob/master/tonecurves/basecurve.py
@@ -30,6 +56,31 @@ CURVE_REFERENCE = np.array(
         [1.000000, 1.000000, 1.000000]
     ]
 )
+
+class TestLift:
+    def test_solve(self):
+        lift = Lift()
+
+        source, target = lift.solve(LIFT_TEST, LIFT_REFERENCE)
+
+        np.testing.assert_allclose(
+            source,
+            target,
+            atol=0.001
+        )
+
+class TestGain:
+    def test_solve(self):
+        gain = Gain()
+
+        source, target = gain.solve(GAIN_TEST, GAIN_REFERENCE)
+
+        np.testing.assert_allclose(
+            source,
+            target,
+            atol=0.001
+        )
+
 
 class TestCurvesInterpolation:
     def test_solve(self):

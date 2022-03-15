@@ -1,5 +1,7 @@
 import numpy as np
 from camera_match import (
+    Lift,
+    Gain,
     CurvesEMOR,
     LinearMatrix,
     RBF,
@@ -627,6 +629,8 @@ bmpcc = np.array([
 
 bmpcc_data = np.concatenate((bmpcc_ev5, bmpcc_ev4, bmpcc_ev3, bmpcc_ev2, bmpcc_ev1, bmpcc_ev0, bmpcc_ev_1, bmpcc_ev_2, bmpcc_ev_3, bmpcc_ev_4), axis=0)
 film_data = np.concatenate((film_ev5, film_ev4, film_ev3, film_ev2, film_ev1, film_ev0, film_ev_1, film_ev_2, film_ev_3, film_ev_4), axis=0)
+
+
 
 class TestPipeline:
     def test_rbf_pipeline(self):

@@ -5,15 +5,16 @@ __email__ = 'ethantim@gmail.com'
 __version__ = '0.1.0'
 
 from .nodes import (
-    Node,
-    CST,
+    Lift,
     Gain,
+    CurvesInterpolation,
+    CurvesEMOR,
+    RBF,
     LinearMatrix,
     RootPolynomialMatrix,
     TetrahedralMatrix,
-    RBF,
-    CurvesInterpolation,
-    CurvesEMOR
+    Node,
+    CST,
 )
 
 from .pipeline import (

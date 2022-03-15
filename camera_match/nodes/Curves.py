@@ -13,6 +13,58 @@ from camera_match.optimise import optimise_matrix
 from typing import Optional, Any, Tuple
 from numpy.typing import NDArray
 
+class Lift(Node):
+    def __init__(self, matrix: Optional[NDArray[Any]] = None):
+        self.matrix = matrix
+
+        if self.matrix is None:
+            self.matrix = self.identity()
+
+    def solve(self, source, target):
+        self.matrix = optimise_matrix(self.apply_matrix, self.matrix, source, target)
+        return (self.apply(source), target)
+
+    def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
+        return self.apply_matrix(RGB, self.matrix)
+
+    @staticmethod
+    def identity() -> NDArray[Any]:
+        return np.array([0, 0, 0])
+
+    @staticmethod
+    def apply_matrix(RGB: NDArray[Any], matrix: NDArray[Any]) -> NDArray[Any]:
+        shape = RGB.shape
+        RGB = np.reshape(RGB, (-1, 3)).T
+
+        lift = np.multiply(matrix.reshape((3, 1)), (1 - RGB))
+
+        return np.reshape(np.transpose(np.add(RGB, lift)), shape)
+
+
+class Gain(Node):
+    def __init__(self, matrix: Optional[NDArray[Any]] = None):
+        self.matrix = matrix
+
+        if self.matrix is None:
+            self.matrix = self.identity()
+
+    def solve(self, source, target):
+        self.matrix = optimise_matrix(self.apply_matrix, self.matrix, source, target)
+        return (self.apply(source), target)
+
+    def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
+        return self.apply_matrix(RGB, self.matrix)
+
+    @staticmethod
+    def identity() -> NDArray[Any]:
+        return np.array([1, 1, 1])
+
+    @staticmethod
+    def apply_matrix(RGB: NDArray[Any], matrix: NDArray[Any]) -> NDArray[Any]:
+        shape = RGB.shape
+        RGB = np.reshape(RGB, (-1, 3)).T
+
+        return np.reshape(np.transpose(np.multiply(matrix.reshape((3, 1)), RGB)), shape)
 
 class CurvesInterpolation(Node):
     def __init__(self, interpolator = PchipInterpolator, **kwargs):
@@ -103,8 +155,10 @@ class CurvesEMOR(Node):
         t_R, t_G, t_B = np.reshape(target, (-1, 3)).T
 
         def fit_channel(source, target, degree):
-            indicies = np.round(source * (EMOR_LENGTH - 1)).astype(np.int32)
-            deviation = target - EMOR_F0[indicies]
+            safe_source, safe_target = (np.clip(source, 0, 1), np.clip(target, 0, 1))
+
+            indicies = np.round(safe_source * (EMOR_LENGTH - 1)).astype(np.int32)
+            deviation = safe_target - EMOR_F0[indicies]
             model = EMOR_H[0:degree, indicies]
 
             return np.dot(np.dot(np.linalg.pinv(np.dot(model, np.transpose(model))), model), deviation)

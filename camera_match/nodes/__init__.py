@@ -1,5 +1,4 @@
 from .Matrix import (
-    Gain,
     LinearMatrix,
     RootPolynomialMatrix,
     TetrahedralMatrix
@@ -14,6 +13,8 @@ from .Node import (
     Node
 )
 from .Curves import (
+    Lift,
+    Gain,
     CurvesInterpolation,
     CurvesEMOR
 )

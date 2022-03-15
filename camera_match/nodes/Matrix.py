@@ -6,34 +6,6 @@ from typing import Optional, Any, Tuple, Union
 from numpy.typing import NDArray
 from camera_match.optimise import optimise_matrix
 
-class Gain(Node):
-    def __init__(self, matrix: Optional[NDArray[Any]] = None):
-        self.matrix = matrix
-
-        if self.matrix is None:
-            self.matrix = self.identity()
-
-    def solve(self, source, target):
-        # Setting Matrix with Moore-Penrose solution for speed
-        self.matrix = np.diag(matrix_colour_correction_Finlayson2015(source, target, degree=1))
-
-        self.matrix = optimise_matrix(self.apply_matrix, self.matrix, source, target)
-        return (self.apply(source), target)
-
-    def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
-        return self.apply_matrix(RGB, self.matrix)
-
-    @staticmethod
-    def identity() -> NDArray[Any]:
-        return np.array([1, 1, 1])
-
-    @staticmethod
-    def apply_matrix(RGB: NDArray[Any], matrix: NDArray[Any]) -> NDArray[Any]:
-        shape = RGB.shape
-        RGB = np.reshape(RGB, (-1, 3)).T
-
-        return np.reshape(np.transpose(np.multiply(matrix.reshape((3, 1)), RGB)), shape)
-
 
 class LinearMatrix(Node):
     def __init__(self, matrix: Optional[NDArray[Any]] = None):
