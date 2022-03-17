@@ -21,13 +21,16 @@ class RBF(Node):
         if self.weights is None or self.coordinates is None:
             return RGB
 
+        shape = RGB.shape
+        RGB = np.reshape(RGB, (-1, 3))
+
         points = self.coordinates.shape[0]
 
         H = np.zeros((RGB.shape[0], points + 3 + 1))
         H[:, :points] = self.basis(cdist(RGB, self.coordinates), self.radius)
         H[:, points] = 1.0
         H[:, -3:] = RGB
-        return np.asarray(np.dot(H, self.weights))
+        return np.reshape(np.asarray(np.dot(H, self.weights)), shape)
 
     def _solve_weights(self, X, Y):
         npts, dim = X.shape
