@@ -3,7 +3,7 @@ from camera_match import Node
 from camera_match.optimise import optimise_pipeline
 
 class Pipeline:
-    def __init__(self, nodes: Optional[list[Node]]=None, finetune: bool=True):
+    def __init__(self, nodes: Optional[list[Node]]=None, finetune: bool=False):
         self.nodes = nodes
 
         if self.nodes is None:

@@ -643,7 +643,7 @@ class TestPipeline:
         np.testing.assert_allclose(
             source,
             target,
-            atol=0.17
+            atol=0.14
         )
 
 
@@ -658,5 +658,5 @@ class TestPipeline:
         np.testing.assert_allclose(
             source,
             target,
-            atol=0.07
+            atol=0.08
         )
