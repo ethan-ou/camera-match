@@ -99,44 +99,33 @@ class TetrahedralMatrix(Node):
 
     @staticmethod
     def apply_matrix(RGB: NDArray[Any], matrix: NDArray[Any]) -> NDArray[Any]:
-        # Return indicies of boolean comparison
-        # e.g. a = [0, 1, 3], b = [1, 1, 1]
-        # i((a > b)) -> [1, 2]
-        def i(arr):
-            return arr.nonzero()[0]
-
-        # Find and remove existing elements (emulates if statement)
-        # e.g. exists([0, 1, 2], [[1], [0]]) -> [2]
-        def exists(arr, prev):
-            return np.setdiff1d(arr, np.concatenate(prev))
-
-        # RGB Multiplication of Tetra
-        def t_matrix(index, r, mult_r, g, mult_g, b, mult_b):
-            return np.multiply.outer(r[index], mult_r) + np.multiply.outer(g[index], mult_g) + np.multiply.outer(b[index], mult_b)
+        def tetra_case(index, r, matrix_r, g, matrix_g, b, matrix_b, constant):
+            R = np.multiply.outer(r[index], matrix_r)
+            G = np.multiply.outer(g[index], matrix_g)
+            B = np.multiply.outer(b[index], matrix_b)
+            return R + G + B + constant
 
         shape = RGB.shape
         RGB = np.reshape(RGB, (-1, 3))
         r, g, b = RGB.T
 
+        blk = np.array([0, 0, 0])
         wht = np.array([1, 1, 1])
         red, yel, grn, cyn, blu, mag = matrix
 
-        base_1 = r > g
-        base_2 = ~(r > g)
-
-        case_1 = i(base_1 & (g > b))
-        case_2 = exists(i(base_1 & (r > b)), [case_1])
-        case_3 = exists(i(base_1), [case_1, case_2])
-        case_4 = i(base_2 & (b > g))
-        case_5 = exists(i(base_2 & (b > r)), [case_4])
-        case_6 = exists(i(base_2), [case_4, case_5])
+        case_1 = np.logical_and(r > g, g > b)
+        case_2 = np.logical_and(r > g, np.logical_and(g <= b, r > b))
+        case_3 = np.logical_and(r > g, np.logical_and(g <= b, r <= b))
+        case_4 = np.logical_and(r <= g, b > g)
+        case_5 = np.logical_and(r <= g, np.logical_and(b <= g, b > r))
+        case_6 = np.logical_and(r <= g, np.logical_and(b <= g, b <= r))
 
         n_RGB = np.zeros(RGB.shape)
-        n_RGB[case_1] = t_matrix(case_1, r, red, g, (yel-red), b, (wht-yel))
-        n_RGB[case_2] = t_matrix(case_2, r, red, g, (wht-mag), b, (mag-red))
-        n_RGB[case_3] = t_matrix(case_3, r, (mag-blu), g, (wht-mag), b, blu)
-        n_RGB[case_4] = t_matrix(case_4, r, (wht-cyn), g, (cyn-blu), b, blu)
-        n_RGB[case_5] = t_matrix(case_5, r, (wht-cyn), g, grn, b, (cyn-grn))
-        n_RGB[case_6] = t_matrix(case_6, r, (yel-grn), g, grn, b, (wht-yel))
+        n_RGB[case_1] = tetra_case(case_1, r, (red-blk), g, (yel-red), b, (wht-yel), blk)
+        n_RGB[case_2] = tetra_case(case_2, r, (red-blk), g, (wht-mag), b, (mag-red), blk)
+        n_RGB[case_3] = tetra_case(case_3, r, (mag-blu), g, (wht-mag), b, (blu-blk), blk)
+        n_RGB[case_4] = tetra_case(case_4, r, (wht-cyn), g, (cyn-blu), b, (blu-blk), blk)
+        n_RGB[case_5] = tetra_case(case_5, r, (wht-cyn), g, (grn-blk), b, (cyn-grn), blk)
+        n_RGB[case_6] = tetra_case(case_6, r, (yel-grn), g, (grn-blk), b, (wht-yel), blk)
 
         return n_RGB.reshape(shape)
