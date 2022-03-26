@@ -137,9 +137,9 @@ class CurvesEMOR(Node):
     def apply_matrix(RGB: NDArray[Any], matrix: NDArray[Any], degree: int, interpolator = PchipInterpolator) -> NDArray[Any]:
         m_R, m_G, m_B = np.reshape(matrix, (-1, 3)).T
 
-        h = EMOR_H[0:degree, :]
+        h = EMOR_H(EMOR_X, degree)
 
-        curve = lambda x: interpolator(EMOR_X, np.dot(np.transpose(x), h) + EMOR_F0)
+        curve = lambda x: interpolator(EMOR_X, np.dot(np.transpose(x), h) + EMOR_F0(EMOR_X))
 
         R_curve = curve(m_R)
         G_curve = curve(m_G)
@@ -157,9 +157,8 @@ class CurvesEMOR(Node):
         def fit_channel(source, target, degree):
             safe_source, safe_target = (np.clip(source, 0, 1), np.clip(target, 0, 1))
 
-            indicies = np.round(safe_source * (EMOR_LENGTH - 1)).astype(np.int32)
-            deviation = safe_target - EMOR_F0[indicies]
-            model = EMOR_H[0:degree, indicies]
+            deviation = safe_target - EMOR_F0(safe_source)
+            model = EMOR_H(safe_source, degree)
 
             return np.dot(np.dot(np.linalg.pinv(np.dot(model, np.transpose(model))), model), deviation)
 
