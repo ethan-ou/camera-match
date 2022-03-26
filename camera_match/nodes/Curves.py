@@ -101,7 +101,7 @@ class CurvesInterpolation(Node):
         return self.curve(RGB)
 
 class CurvesEMOR(Node):
-    def __init__(self, matrix = None, degree: int = 6, interpolator = PchipInterpolator):
+    def __init__(self, matrix = None, degree: int = 7, interpolator = PchipInterpolator):
         if degree > EMOR_MAX_FACTORS or degree < 1:
             raise ValueError(
                 f"degree for EMoR must be between 1 and 11."

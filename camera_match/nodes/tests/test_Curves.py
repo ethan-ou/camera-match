@@ -103,5 +103,5 @@ class TestCurvesEMOR:
         np.testing.assert_allclose(
             source,
             target,
-            atol=0.003
+            atol=0.004
         )

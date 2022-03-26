@@ -1206,7 +1206,7 @@ def EMOR_F0(x):
 
     k = 3
     t, c = DATA_EMOR_F0
-    spline = BSpline(t, c, k, extrapolate=False)
+    spline = BSpline.construct_fast(np.array(t), np.array(c), k)
     return spline(np.array(x))
 
 def EMOR_H(x, degree):
@@ -1215,7 +1215,7 @@ def EMOR_H(x, degree):
     k = 3
     points = []
     for t, c, in DATA_EMOR_H[:degree]:
-        spline = BSpline(t, c, k, extrapolate=False)
+        spline = BSpline.construct_fast(np.array(t), np.array(c), k)
         points.append(spline(x))
 
     return np.array(points)
