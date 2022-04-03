@@ -633,30 +633,32 @@ film_data = np.concatenate((film_ev5, film_ev4, film_ev3, film_ev2, film_ev1, fi
 
 
 class TestPipeline:
-    def test_rbf_pipeline(self):
+    def test_rbf(self):
         pipeline = Pipeline([
             RBF()
         ])
 
-        source, target = pipeline.solve(bmpcc_data, film_data)
+        pipeline.solve(bmpcc_data, film_data)
+        source = pipeline.apply(bmpcc_data)
 
         np.testing.assert_allclose(
             source,
-            target,
+            film_data,
             atol=0.14
         )
 
 
-    def test_curves_matrix_pipeline(self):
+    def test_curves_matrix(self):
         pipeline = Pipeline([
             CurvesEMOR(),
             LinearMatrix()
         ])
 
-        source, target = pipeline.solve(bmpcc_data, film_data)
+        pipeline.solve(bmpcc_data, film_data)
+        source = pipeline.apply(bmpcc_data)
 
         np.testing.assert_allclose(
             source,
-            target,
+            film_data,
             atol=0.08
         )

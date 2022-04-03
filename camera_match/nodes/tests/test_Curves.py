@@ -59,49 +59,49 @@ CURVE_REFERENCE = np.array(
 
 class TestLift:
     def test_solve(self):
-        lift = Lift()
-
-        source, target = lift.solve(LIFT_TEST, LIFT_REFERENCE)
+        node = Lift()
+        node.solve(LIFT_TEST, LIFT_REFERENCE)
+        source = node.apply(LIFT_TEST)
 
         np.testing.assert_allclose(
             source,
-            target,
+            LIFT_REFERENCE,
             atol=0.001
         )
 
 class TestGain:
     def test_solve(self):
-        gain = Gain()
-
-        source, target = gain.solve(GAIN_TEST, GAIN_REFERENCE)
+        node = Gain()
+        node.solve(GAIN_TEST, GAIN_REFERENCE)
+        source = node.apply(GAIN_TEST)
 
         np.testing.assert_allclose(
             source,
-            target,
+            GAIN_REFERENCE,
             atol=0.001
         )
 
 
 class TestCurvesInterpolation:
     def test_solve(self):
-        curve = CurvesInterpolation()
-
-        source, target = curve.solve(CURVE_TEST, CURVE_REFERENCE)
+        node = CurvesInterpolation()
+        node.solve(CURVE_TEST, CURVE_REFERENCE)
+        source = node.apply(CURVE_TEST)
 
         np.testing.assert_allclose(
             source,
-            target,
+            CURVE_REFERENCE,
             atol=0.001
         )
 
 class TestCurvesEMOR:
     def test_solve(self):
-        curve = CurvesEMOR()
-
-        source, target = curve.solve(CURVE_TEST, CURVE_REFERENCE)
+        node = CurvesEMOR()
+        node.solve(CURVE_TEST, CURVE_REFERENCE)
+        source = node.apply(CURVE_TEST)
 
         np.testing.assert_allclose(
             source,
-            target,
+            CURVE_REFERENCE,
             atol=0.004
         )

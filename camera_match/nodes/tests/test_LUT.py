@@ -66,12 +66,13 @@ MATRIX_REFERENCE = np.array(
 
 class TestRBF:
     def test_solve(self):
-        lut = RBF()
-        source, target = lut.solve(MATRIX_TEST, MATRIX_REFERENCE)
+        node = RBF()
+        node.solve(MATRIX_TEST, MATRIX_REFERENCE)
+        source = node.apply(MATRIX_TEST)
 
         np.testing.assert_allclose(
             source,
-            target,
+            MATRIX_REFERENCE,
             atol=0.06
         )
 

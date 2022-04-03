@@ -6,68 +6,106 @@ from typing import Any
 from numpy.typing import NDArray
 from camera_match.metrics import DifferenceMetric
 
-def optimise_matrix(fn, matrix: NDArray[Any], source: NDArray[Any], target: NDArray[Any], metrics: list[DifferenceMetric] = ["MSE", "Weighted Euclidean"]):
-    def solve_fn(flat_matrix: NDArray[Any], matrix_shape: tuple[int], fn, source: NDArray[Any], target: NDArray[Any], metric: DifferenceMetric):
-        matrix = np.reshape(flat_matrix, matrix_shape)
-        return colour_difference(source=fn(source, matrix), target=target, metric=metric)
+# def _reshape_matrix(matrix_flat, matrix_shapes):
+#     matrix = []
+#     index = 0
+#     for shape in matrix_shapes:
+#         size = np.product(shape)
+#         matrix.append(matrix_flat[index : index + size].reshape(shape))
+#         index += size
 
-    new_matrix = matrix
+#     return matrix
 
-    for metric in metrics:
-        new_matrix = least_squares(solve_fn, new_matrix.flatten(), ftol=1e-5,
-                                args=(matrix.shape, fn, source, target, metric)).x
+# def _get_matrix_from_nodes(nodes):
+#     matrix = []
+#     for node in nodes:
+#         if hasattr(node, 'matrix'):
+#             matrix.append(node.matrix)
 
-    return np.reshape(new_matrix, matrix.shape)
+#     return matrix
 
-def optimise_pipeline(nodes, source: NDArray[Any], target: NDArray[Any], metrics: list[DifferenceMetric] = ["MSE", "Weighted Euclidean"]):
-    def reshape_array(flat_matrix, matrix_shapes):
-        matrix = []
-        index = 0
-        for shape in matrix_shapes:
-            size = np.product(shape)
-            matrix.append(flat_matrix[index : index + size].reshape(shape))
-            index += size
+# def _apply_matrix_to_nodes(nodes, matrix_list):
+#     matrix_index = 0
+#     for node in nodes:
+#         if hasattr(node, 'matrix'):
+#             node.matrix = matrix_list[matrix_index]
+#             matrix_index += 1
 
-        return matrix
+#     return nodes
 
-    def get_matrix_from_nodes(nodes):
-        matrix = []
-        for node in nodes:
-            if hasattr(node, 'matrix'):
-                matrix.append(node.matrix)
+class NodeOptimiser:
+    def __init__(self, fn, matrix, fn_args=None, ftol=1e-5, loss='soft_l1', max_nfev=None, verbose=0, metrics=None):
+        self.fn = fn
+        self.matrix = matrix
+        self.fn_args = fn_args
+        self.ftol = ftol
+        self.loss = loss
+        self.max_nfev = max_nfev
+        self.verbose = verbose
 
-        return matrix
+        if isinstance(metrics, str):
+            metrics = [metrics]
 
-    def apply_matrix_to_nodes(nodes, matrix):
-        matrix_index = 0
-        for node in nodes:
-            if hasattr(node, 'matrix'):
-                node.matrix = matrix[matrix_index]
-                matrix_index += 1
+        if metrics is None:
+            metrics = ["MSE", "Weighted Euclidean"]
 
-        return nodes
+        self.metrics = metrics
 
-    def solve_fn(flat_matrix: NDArray[Any], matrix_shapes: list[tuple[int]], nodes, source: NDArray[Any], target: NDArray[Any], metric: DifferenceMetric):
-        matrix = reshape_array(flat_matrix, matrix_shapes)
-        nodes = apply_matrix_to_nodes(nodes, matrix)
-
-        for node in nodes:
-            source = node.apply(source)
+    def solve(self, source, target):
+        matrix = self.matrix
+        for metric in self.metrics:
+            matrix = least_squares(self._solve_fn, matrix.flatten(), ftol=self.ftol,
+                                   loss=self.loss, max_nfev=self.max_nfev, verbose=self.verbose,
+                                   args=(self.matrix.shape, self.fn, self.fn_args, source, target, metric)
+                                   ).x
+        
+        return np.reshape(matrix, self.matrix.shape)
+    
+    @staticmethod
+    def _solve_fn(matrix_flat, matrix_shape, fn, fn_args, source, target, metric):
+        matrix = np.reshape(matrix_flat, matrix_shape)
+        
+        if isinstance(fn_args, tuple):
+            source = fn(source, matrix, *fn_args)
+        elif fn_args:
+            source = fn(source, matrix, fn_args)
+        else:
+            source = fn(source, matrix)
 
         return colour_difference(source=source, target=target, metric=metric)
 
-    matrix = get_matrix_from_nodes(nodes)
 
-    if not matrix:
-        return nodes
+# class PipelineOptimiser:
+#     def __init__(self, tol=1e-3, metrics=None):
+#         self.tol = tol
 
-    shapes = [a.shape for a in matrix]
-    flat_matrix = np.concatenate([a.flatten() for a in matrix])
+#         if metrics is None:
+#             metrics = ["MSE", "Weighted Euclidean"]
 
-    for metric in metrics:
-        flat_matrix = minimize(solve_fn, flat_matrix, tol=1e-3,
-                                args=(shapes, nodes, source, target, metric)).x
+#         self.metrics = metrics
+    
+#     def solve(self, source, target, nodes):
+#         matrix = _get_matrix_from_nodes(nodes)
 
+#         if not matrix:
+#             return nodes
 
-    matrix = reshape_array(flat_matrix, shapes)
-    return apply_matrix_to_nodes(nodes, matrix)
+#         shapes = [a.shape for a in matrix]
+#         flat_matrix = np.concatenate([a.flatten() for a in matrix])
+
+#         for metric in self.metrics:
+#             flat_matrix = minimize(self._solve_fn, flat_matrix, tol=self.tol,
+#                                     args=(shapes, source, target, nodes, metric)).x
+
+#         matrix = _reshape_matrix(flat_matrix, shapes)
+#         return _apply_matrix_to_nodes(nodes, matrix)
+
+#     @staticmethod
+#     def _solve_fn(matrix_flat, matrix_shapes, source, target, nodes, metric):
+#         matrix = _reshape_matrix(matrix_flat, matrix_shapes)
+#         nodes = _apply_matrix_to_nodes(nodes, matrix)
+
+#         for node in nodes:
+#             source = node.apply(source)
+
+#         return colour_difference(source=source, target=target, metric=metric)

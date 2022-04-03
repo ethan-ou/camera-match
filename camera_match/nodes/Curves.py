@@ -3,14 +3,13 @@ from scipy.interpolate import PchipInterpolator
 from .Node import Node
 from .datasets import (
     EMOR_MAX_FACTORS,
-    EMOR_LENGTH,
     EMOR_X,
     EMOR_F0,
     EMOR_H
 )
-from camera_match.optimise import optimise_matrix
+from camera_match.optimise import NodeOptimiser
 
-from typing import Optional, Any, Tuple
+from typing import Optional, Any
 from numpy.typing import NDArray
 
 class Lift(Node):
@@ -21,8 +20,8 @@ class Lift(Node):
             self.matrix = self.identity()
 
     def solve(self, source, target):
-        self.matrix = optimise_matrix(self.apply_matrix, self.matrix, source, target)
-        return (self.apply(source), target)
+        optimiser = NodeOptimiser(self.apply_matrix, self.matrix)
+        self.matrix = optimiser.solve(source, target)
 
     def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
         return self.apply_matrix(RGB, self.matrix)
@@ -49,9 +48,9 @@ class Gain(Node):
             self.matrix = self.identity()
 
     def solve(self, source, target):
-        self.matrix = optimise_matrix(self.apply_matrix, self.matrix, source, target)
-        return (self.apply(source), target)
-
+        optimiser = NodeOptimiser(self.apply_matrix, self.matrix)
+        self.matrix = optimiser.solve(source, target)
+ 
     def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
         return self.apply_matrix(RGB, self.matrix)
 
@@ -72,7 +71,7 @@ class CurvesInterpolation(Node):
         self.kwargs = kwargs
         self.curve = None
 
-    def solve(self, source: NDArray[Any], target: NDArray[Any]) -> Tuple[NDArray[Any], NDArray[Any]]:
+    def solve(self, source: NDArray[Any], target: NDArray[Any]):
         s_R, s_G, s_B = np.reshape(source, (-1, 3)).T
         t_R, t_G, t_B = np.reshape(target, (-1, 3)).T
 
@@ -91,8 +90,6 @@ class CurvesInterpolation(Node):
             return np.reshape(np.transpose([R_curve(R), G_curve(G), B_curve(B)]), shape)
 
         self.curve = apply_curve
-
-        return (self.apply(source), target)
 
     def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
         if self.curve is None:
@@ -115,13 +112,11 @@ class CurvesEMOR(Node):
             self.matrix = self.identity(self.degree)
 
     # Adapted from: https://github.com/dailerob/BSDF-measurement-device/blob/9948f051f59ce456e2f9c66e5c2a2050832ba1c9/Find_Camera_Response.py
-    def solve(self, source: NDArray[Any], target: NDArray[Any]) -> Tuple[NDArray[Any], NDArray[Any]]:
+    def solve(self, source: NDArray[Any], target: NDArray[Any]):
         self.matrix = self._solve_pinv(source, target, self.degree)
 
-        apply_matrix = lambda RGB, matrix: self.apply_matrix(RGB, matrix, self.degree)
-        self.matrix = optimise_matrix(apply_matrix, self.matrix, source, target)
-
-        return (self.apply(source), target)
+        optimiser = NodeOptimiser(self.apply_matrix, self.matrix, fn_args=(self.degree))
+        self.matrix = optimiser.solve(source, target)
 
     def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
         if self.matrix is None:

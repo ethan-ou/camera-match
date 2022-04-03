@@ -2,9 +2,9 @@ import numpy as np
 from colour.characterisation import polynomial_expansion_Finlayson2015, matrix_colour_correction_Finlayson2015
 from .Node import Node
 
-from typing import Optional, Any, Tuple, Union
+from typing import Optional, Any
 from numpy.typing import NDArray
-from camera_match.optimise import optimise_matrix
+from camera_match.optimise import NodeOptimiser
 
 
 class LinearMatrix(Node):
@@ -14,12 +14,12 @@ class LinearMatrix(Node):
         if self.matrix is None:
             self.matrix = self.identity()
 
-    def solve(self, source: NDArray[Any], target: NDArray[Any]) -> Tuple[NDArray[Any], NDArray[Any]]:
+    def solve(self, source: NDArray[Any], target: NDArray[Any]):
         # Setting Matrix with Moore-Penrose solution for speed
         self.matrix = matrix_colour_correction_Finlayson2015(source, target, degree=1)
-
-        self.matrix = optimise_matrix(self.apply_matrix, self.matrix, source, target)
-        return (self.apply(source), target)
+        
+        optimiser = NodeOptimiser(self.apply_matrix, self.matrix)
+        self.matrix = optimiser.solve(source, target)
 
     def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
         return self.apply_matrix(RGB, self.matrix)
@@ -48,12 +48,12 @@ class RootPolynomialMatrix(Node):
         if self.matrix is None:
             self.matrix = self.identity(self.degree)
 
-    def solve(self, source: NDArray[Any], target: NDArray[Any]) -> Tuple[NDArray[Any], NDArray[Any]]:
+    def solve(self, source: NDArray[Any], target: NDArray[Any]):
         # Setting Matrix with Moore-Penrose solution for speed
         self.matrix = matrix_colour_correction_Finlayson2015(source, target, degree=self.degree, root_polynomial_expansion=True)
-
-        self.matrix = optimise_matrix(lambda RGB, matrix : self.apply_matrix(RGB, matrix, self.degree), self.matrix, source, target)
-        return (self.apply(source), target)
+        
+        optimiser = NodeOptimiser(self.apply_matrix, self.matrix, fn_args=(self.degree))
+        self.matrix = optimiser.solve(source, target)
 
     def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
         return self.apply_matrix(RGB, self.matrix, self.degree)
@@ -86,9 +86,9 @@ class TetrahedralMatrix(Node):
         if self.matrix is None:
             self.matrix = self.identity()
 
-    def solve(self, source: NDArray[Any], target: NDArray[Any]) -> Tuple[NDArray[Any], NDArray[Any]]:
-        self.matrix = optimise_matrix(self.apply_matrix, self.matrix, source, target)
-        return (self.apply(source), target)
+    def solve(self, source: NDArray[Any], target: NDArray[Any]):
+        optimiser = NodeOptimiser(self.apply_matrix, self.matrix)
+        self.matrix = optimiser.solve(source, target)
 
     def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
         return self.apply_matrix(RGB, self.matrix)

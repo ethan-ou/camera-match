@@ -2,7 +2,7 @@ import numpy as np
 from scipy.spatial.distance import cdist
 from .Node import Node
 
-from typing import Optional, Any, Tuple
+from typing import Optional, Any
 from numpy.typing import NDArray
 
 class RBF(Node):
@@ -11,11 +11,9 @@ class RBF(Node):
         self.weights = None
         self.coordinates = None
 
-    def solve(self, source: NDArray[Any], target: NDArray[Any]) -> Tuple[NDArray[Any], NDArray[Any]]:
+    def solve(self, source: NDArray[Any], target: NDArray[Any]):
         self.coordinates = source
         self.weights = self._solve_weights(source, target)
-
-        return (self.apply(source), target)
 
     def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
         if self.weights is None or self.coordinates is None:

@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Any, Tuple
+from typing import Any
 from numpy.typing import NDArray
 
 class Node(ABC):
     @abstractmethod
-    def solve(self, source: NDArray[Any], target: NDArray[Any]) -> Tuple[NDArray[Any], NDArray[Any]]:
+    def solve(self, source: NDArray[Any], target: NDArray[Any]):
         pass
 
     @abstractmethod

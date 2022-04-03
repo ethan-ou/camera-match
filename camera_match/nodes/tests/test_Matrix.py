@@ -67,11 +67,12 @@ MATRIX_REFERENCE = np.array(
 class TestLinearMatrix:
 
     def test_solve(self):
-        matrix = LinearMatrix()
-        matrix.solve(MATRIX_TEST, MATRIX_REFERENCE)
+        node = LinearMatrix()
+        node.solve(MATRIX_TEST, MATRIX_REFERENCE)
+        source = node.apply(MATRIX_TEST)
 
         np.testing.assert_allclose(
-            matrix.matrix,
+            node.matrix,
             np.array(
                 [
                     [ 0.7144091, -0.0087610,  0.1865459],
@@ -83,7 +84,7 @@ class TestLinearMatrix:
         )
 
         np.testing.assert_allclose(
-            LinearMatrix(matrix=matrix.matrix).apply(MATRIX_TEST),
+            source,
             MATRIX_REFERENCE,
             atol=0.17
         )
@@ -93,11 +94,12 @@ class TestRootPolynomialMatrix:
 
     def test_solve(self):
         DEGREE = 2
-        matrix = RootPolynomialMatrix(degree=DEGREE)
-        matrix.solve(MATRIX_TEST, MATRIX_REFERENCE)
+        node = RootPolynomialMatrix(degree=DEGREE)
+        node.solve(MATRIX_TEST, MATRIX_REFERENCE)
+        source = node.apply(MATRIX_TEST)
 
         np.testing.assert_allclose(
-            matrix.matrix,
+            node.matrix,
             np.array(
                 [
                     [ 0.871636, -0.017426, -0.078651, -0.282616,  0.480013, -0.054602],
@@ -109,7 +111,7 @@ class TestRootPolynomialMatrix:
         )
 
         np.testing.assert_allclose(
-            RootPolynomialMatrix(matrix=matrix.matrix, degree=DEGREE).apply(MATRIX_TEST),
+            source,
             MATRIX_REFERENCE,
             atol=0.07
         )
@@ -118,11 +120,12 @@ class TestRootPolynomialMatrix:
 class TestTetrahedralMatrix:
 
     def test_solve(self):
-        matrix = TetrahedralMatrix()
-        matrix.solve(MATRIX_TEST, MATRIX_REFERENCE)
+        node = TetrahedralMatrix()
+        node.solve(MATRIX_TEST, MATRIX_REFERENCE)
+        source = node.apply(MATRIX_TEST)
 
         np.testing.assert_allclose(
-            matrix.matrix,
+            node.matrix,
             np.array(
                 [
                     [  7.87893739e-01,   6.44334573e-02,   6.14256000e-04],
@@ -137,7 +140,7 @@ class TestTetrahedralMatrix:
         )
 
         np.testing.assert_allclose(
-            TetrahedralMatrix(matrix=matrix.matrix).apply(MATRIX_TEST),
+            source,
             MATRIX_REFERENCE,
             atol=0.15
         )

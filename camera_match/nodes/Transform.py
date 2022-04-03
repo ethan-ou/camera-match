@@ -5,7 +5,7 @@ from typing import Any, Tuple, Optional
 
 class CST(Node):
     def __init__(self, source_gamma=None, target_gamma=None,
-                source_colourspace=None, target_colourspace=None, apply_to_target: bool=False):
+                source_colourspace=None, target_colourspace=None):
         """
         Convert RGB array from one colourspace to another
         similar to Resolve's Color Space Transform.
@@ -18,13 +18,9 @@ class CST(Node):
         self.target_gamma = target_gamma
         self.source_colourspace = source_colourspace
         self.target_colourspace = target_colourspace
-        self.apply_to_target = apply_to_target
 
-    def solve(self, source: NDArray[Any], target: NDArray[Any]) -> Tuple[NDArray[Any], NDArray[Any]]:
-        if self.apply_to_target is True:
-            target = self.apply(target)
-
-        return (self.apply(source), target)
+    def solve(self, source: NDArray[Any], target: NDArray[Any]):
+        pass
 
 
     def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
