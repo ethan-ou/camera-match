@@ -106,9 +106,8 @@ class TetrahedralMatrix(Node):
             return R + G + B + constant
 
         shape = RGB.shape
-        RGB = np.reshape(RGB, (-1, 3))
-        r, g, b = RGB.T
-
+        r, g, b = np.transpose(np.reshape(RGB, (-1, 3)))
+        
         blk = np.array([0, 0, 0])
         wht = np.array([1, 1, 1])
         red, yel, grn, cyn, blu, mag = matrix
