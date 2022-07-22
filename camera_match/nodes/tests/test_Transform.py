@@ -8,7 +8,7 @@ class TestCST:
 
         node = CST(source_gamma="ALEXA Log C")
 
-        np.testing.assert_allclose(node.apply(RGB_A), RGB_B)
+        np.testing.assert_allclose(node(RGB_A), RGB_B)
 
     def test_gamma_decoding(self):
         RGB_A = np.array([0.0, 0.18, 1.0])
@@ -16,7 +16,7 @@ class TestCST:
 
         node = CST(target_gamma="ALEXA Log C")
 
-        np.testing.assert_allclose(node.apply(RGB_A), RGB_B)
+        np.testing.assert_allclose(node(RGB_A), RGB_B)
 
     def test_gamma_transform(self):
         RGB_A = np.array([0.092809000000000, 0.391006832034084, 0.570631558120417])
@@ -24,7 +24,7 @@ class TestCST:
 
         node = CST(source_gamma="ALEXA Log C", target_gamma="S-Log3")
 
-        np.testing.assert_allclose(node.apply(RGB_A), RGB_B)
+        np.testing.assert_allclose(node(RGB_A), RGB_B)
 
     def test_colourspace_transform(self):
         RGB_A = np.array([0.21931722, 0.06950287, 0.04694832])
@@ -32,7 +32,7 @@ class TestCST:
 
         node = CST(source_colourspace="ACES2065-1", target_colourspace="sRGB")
 
-        np.testing.assert_allclose(node.apply(RGB_A), RGB_B)
+        np.testing.assert_allclose(node(RGB_A), RGB_B)
 
     def test_gamma_colourspace_transform(self):
         RGB_A = np.array([0.21931722, 0.06950287, 0.04694832])
@@ -41,4 +41,4 @@ class TestCST:
         node = CST(source_gamma="ALEXA Log C", target_gamma="S-Log3",
                 source_colourspace="ACES2065-1", target_colourspace="sRGB")
 
-        np.testing.assert_allclose(node.apply(RGB_A), RGB_B, rtol=1e-06)
+        np.testing.assert_allclose(node(RGB_A), RGB_B, rtol=1e-06)

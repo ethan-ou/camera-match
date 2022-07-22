@@ -8,5 +8,5 @@ class Node(ABC):
         pass
 
     @abstractmethod
-    def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
+    def __call__(self, RGB: NDArray[Any]) -> NDArray[Any]:
         pass

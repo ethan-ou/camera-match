@@ -61,7 +61,7 @@ class TestLift:
     def test_solve(self):
         node = Lift()
         node.solve(LIFT_TEST, LIFT_REFERENCE)
-        source = node.apply(LIFT_TEST)
+        source = node(LIFT_TEST)
 
         np.testing.assert_allclose(
             source,
@@ -73,7 +73,7 @@ class TestGain:
     def test_solve(self):
         node = Gain()
         node.solve(GAIN_TEST, GAIN_REFERENCE)
-        source = node.apply(GAIN_TEST)
+        source = node(GAIN_TEST)
 
         np.testing.assert_allclose(
             source,
@@ -86,7 +86,7 @@ class TestCurvesInterpolation:
     def test_solve(self):
         node = CurvesInterpolation()
         node.solve(CURVE_TEST, CURVE_REFERENCE)
-        source = node.apply(CURVE_TEST)
+        source = node(CURVE_TEST)
 
         np.testing.assert_allclose(
             source,
@@ -98,7 +98,7 @@ class TestCurvesEMOR:
     def test_solve(self):
         node = CurvesEMOR()
         node.solve(CURVE_TEST, CURVE_REFERENCE)
-        source = node.apply(CURVE_TEST)
+        source = node(CURVE_TEST)
 
         np.testing.assert_allclose(
             source,

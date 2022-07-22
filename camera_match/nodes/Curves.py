@@ -23,7 +23,7 @@ class Lift(Node):
         optimiser = NodeOptimiser(self.apply_matrix, self.matrix)
         self.matrix = optimiser.solve(source, target)
 
-    def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
+    def __call__(self, RGB: NDArray[Any]) -> NDArray[Any]:
         return self.apply_matrix(RGB, self.matrix)
 
     @staticmethod
@@ -51,7 +51,7 @@ class Gain(Node):
         optimiser = NodeOptimiser(self.apply_matrix, self.matrix)
         self.matrix = optimiser.solve(source, target)
  
-    def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
+    def __call__(self, RGB: NDArray[Any]) -> NDArray[Any]:
         return self.apply_matrix(RGB, self.matrix)
 
     @staticmethod
@@ -91,7 +91,7 @@ class CurvesInterpolation(Node):
 
         self.curve = apply_curve
 
-    def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
+    def __call__(self, RGB: NDArray[Any]) -> NDArray[Any]:
         if self.curve is None:
             return RGB
 
@@ -118,7 +118,7 @@ class CurvesEMOR(Node):
         optimiser = NodeOptimiser(self.apply_matrix, self.matrix, fn_args=(self.degree))
         self.matrix = optimiser.solve(source, target)
 
-    def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
+    def __call__(self, RGB: NDArray[Any]) -> NDArray[Any]:
         if self.matrix is None:
             return RGB
 

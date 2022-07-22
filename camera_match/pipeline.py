@@ -9,36 +9,33 @@ class Pipeline:
             self.nodes = []
 
         for node in self.nodes:
-            if isinstance(node, list) or isinstance(node, tuple):
+            if isinstance(node, list):
                 if len(node) > 2:
                     raise ValueError(
                         f"Cannot have more than two nodes for a single step of the pipeline."
                     )
-                if len(node) == 0:
-                    raise ValueError(
-                        f"Cannot have an empty list or tuple as a step of the pipeline."
-                    )
 
     def solve(self, source, target):        
         for node in self.nodes:
-            if isinstance(node, list) or isinstance(node, tuple):
+            if isinstance(node, list):
                 if len(node) == 2:
                     source_node, target_node = node
-                    target = target_node.apply(target)
+                    target = target_node(target)
                     source_node.solve(source, target)
-                    source = source_node.apply(source)
+                    source = source_node(source)
                 elif len(node) == 1:
                     node[0].solve(source, target)
-                    source = node[0].apply(source)
+                    source = node[0](source)
             else:
                 node.solve(source, target)
-                source = node.apply(source)
+                source = node(source)
 
-    def apply(self, RGB):
+    def __call__(self, RGB):
         for node in self.nodes:
-            if isinstance(node, list) or isinstance(node, tuple):
-                RGB = node[0].apply(RGB)
+            if isinstance(node, list):
+                if node:
+                    RGB = node[0](RGB)
             else:
-                RGB = node.apply(RGB)
+                RGB = node(RGB)
 
         return RGB

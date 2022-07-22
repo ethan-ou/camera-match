@@ -21,7 +21,7 @@ class LinearMatrix(Node):
         optimiser = NodeOptimiser(self.apply_matrix, self.matrix)
         self.matrix = optimiser.solve(source, target)
 
-    def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
+    def __call__(self, RGB: NDArray[Any]) -> NDArray[Any]:
         return self.apply_matrix(RGB, self.matrix)
 
     @staticmethod
@@ -55,7 +55,7 @@ class RootPolynomialMatrix(Node):
         optimiser = NodeOptimiser(self.apply_matrix, self.matrix, fn_args=(self.degree))
         self.matrix = optimiser.solve(source, target)
 
-    def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
+    def __call__(self, RGB: NDArray[Any]) -> NDArray[Any]:
         return self.apply_matrix(RGB, self.matrix, self.degree)
 
     @staticmethod
@@ -90,7 +90,7 @@ class TetrahedralMatrix(Node):
         optimiser = NodeOptimiser(self.apply_matrix, self.matrix)
         self.matrix = optimiser.solve(source, target)
 
-    def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
+    def __call__(self, RGB: NDArray[Any]) -> NDArray[Any]:
         return self.apply_matrix(RGB, self.matrix)
 
     @staticmethod

@@ -646,19 +646,19 @@ class TestPipeline:
 
         pipeline.solve(RGB_A, RGB_B)
         np.testing.assert_allclose(
-            pipeline.apply(RGB_A),
+            pipeline(RGB_A),
             RGB_C,
             atol=0.00001
         )
 
         pipeline = Pipeline([
-            (CST(), CST(source_gamma="S-Log3")),
+            [CST(), CST(source_gamma="S-Log3")],
             LinearMatrix()
         ])
 
         pipeline.solve(RGB_A, RGB_B)
         np.testing.assert_allclose(
-            pipeline.apply(RGB_A),
+            pipeline(RGB_A),
             RGB_C,
             atol=0.00001
         )
@@ -669,7 +669,7 @@ class TestPipeline:
         ])
 
         pipeline.solve(bmpcc_data, film_data)
-        source = pipeline.apply(bmpcc_data)
+        source = pipeline(bmpcc_data)
 
         np.testing.assert_allclose(
             source,
@@ -685,7 +685,7 @@ class TestPipeline:
         ])
 
         pipeline.solve(bmpcc_data, film_data)
-        source = pipeline.apply(bmpcc_data)
+        source = pipeline(bmpcc_data)
 
         np.testing.assert_allclose(
             source,

@@ -69,7 +69,7 @@ class TestLinearMatrix:
     def test_solve(self):
         node = LinearMatrix()
         node.solve(MATRIX_TEST, MATRIX_REFERENCE)
-        source = node.apply(MATRIX_TEST)
+        source = node(MATRIX_TEST)
 
         np.testing.assert_allclose(
             node.matrix,
@@ -96,7 +96,7 @@ class TestRootPolynomialMatrix:
         DEGREE = 2
         node = RootPolynomialMatrix(degree=DEGREE)
         node.solve(MATRIX_TEST, MATRIX_REFERENCE)
-        source = node.apply(MATRIX_TEST)
+        source = node(MATRIX_TEST)
 
         np.testing.assert_allclose(
             node.matrix,
@@ -122,7 +122,7 @@ class TestTetrahedralMatrix:
     def test_solve(self):
         node = TetrahedralMatrix()
         node.solve(MATRIX_TEST, MATRIX_REFERENCE)
-        source = node.apply(MATRIX_TEST)
+        source = node(MATRIX_TEST)
 
         np.testing.assert_allclose(
             node.matrix,

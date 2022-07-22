@@ -68,7 +68,7 @@ class TestRBF:
     def test_solve(self):
         node = RBF()
         node.solve(MATRIX_TEST, MATRIX_REFERENCE)
-        source = node.apply(MATRIX_TEST)
+        source = node(MATRIX_TEST)
 
         np.testing.assert_allclose(
             source,

@@ -23,7 +23,7 @@ class CST(Node):
         pass
 
 
-    def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
+    def __call__(self, RGB: NDArray[Any]) -> NDArray[Any]:
         """
         Applies Color Space Transform to an RGB array.
         """

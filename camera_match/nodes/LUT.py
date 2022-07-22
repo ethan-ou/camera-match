@@ -15,7 +15,7 @@ class RBF(Node):
         self.coordinates = source
         self.weights = self._solve_weights(source, target)
 
-    def apply(self, RGB: NDArray[Any]) -> NDArray[Any]:
+    def __call__(self, RGB: NDArray[Any]) -> NDArray[Any]:
         if self.weights is None or self.coordinates is None:
             return RGB
 
