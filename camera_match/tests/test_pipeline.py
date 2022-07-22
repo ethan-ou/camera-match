@@ -2,6 +2,8 @@ import numpy as np
 from camera_match import (
     Lift,
     Gain,
+    CST,
+    CurvesInterpolation,
     CurvesEMOR,
     LinearMatrix,
     RBF,
@@ -633,6 +635,34 @@ film_data = np.concatenate((film_ev5, film_ev4, film_ev3, film_ev2, film_ev1, fi
 
 
 class TestPipeline:
+    def test_stacked_nodes(self):
+        RGB_A = np.array([0.092809000000000, 0.391006832034084, 0.570631558120417]) # ALEXA Log C
+        RGB_B = np.array([0.092864125122190, 0.41055718475073, 0.596027343690123]) # S-Log3
+        RGB_C = np.array([0.0, 0.18, 1.0])
+        pipeline = Pipeline([
+            [CST(source_gamma="ALEXA Log C"), CST(source_gamma="S-Log3")],
+            LinearMatrix()
+        ])
+
+        pipeline.solve(RGB_A, RGB_B)
+        np.testing.assert_allclose(
+            pipeline.apply(RGB_A),
+            RGB_C,
+            atol=0.00001
+        )
+
+        pipeline = Pipeline([
+            (CST(), CST(source_gamma="S-Log3")),
+            LinearMatrix()
+        ])
+
+        pipeline.solve(RGB_A, RGB_B)
+        np.testing.assert_allclose(
+            pipeline.apply(RGB_A),
+            RGB_C,
+            atol=0.00001
+        )
+
     def test_rbf(self):
         pipeline = Pipeline([
             RBF()
