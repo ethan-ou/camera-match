@@ -36,7 +36,11 @@ def mean_delta_E_power(source, target):
 # Modified Euclidean Distance
 # Taken from https://stackoverflow.com/questions/8863810/python-find-similar-colors-best-way
 def weighted_euclidean(source, target):
-    rm = 0.5 * (source[:, 0] + target[:, 0])
+    # Avoid errors with 1D arrays
+    if source.ndim < 2:
+        rm = 0.5 * (source + target)
+    else:
+        rm = 0.5 * (source[:, 0] + target[:, 0])
     drgb = (source - target) ** 2
     t = np.array([2 + rm, 4 + 0 * rm, 3 - rm]).T
     return np.sqrt(np.sum(t * drgb, 1))
