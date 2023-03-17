@@ -1,7 +1,7 @@
 from typing import Optional
 from camera_match import Node
 
-class Pipeline:
+class Pipeline(Node):
     def __init__(self, nodes: Optional[list[Node]]=None):
         self.nodes = nodes
 

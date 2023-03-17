@@ -7,7 +7,8 @@ from .Transform import (
     CST
 )
 from .LUT import (
-    RBF
+    RBF,
+    LUT
 )
 from .Node import (
     Node
