@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Any
+import numpy as np
 from numpy.typing import NDArray
 import matplotlib.pyplot as plt
 from colour import LUT3D, LUT3x1D, write_LUT
