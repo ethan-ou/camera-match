@@ -47,7 +47,7 @@ class Node(ABC):
         ax.legend()
 
 
-    def export_LUT(self, size: int=33, path="LUT.cube") -> None:
+    def export_LUT(self, path="LUT.cube", size: int=33) -> None:
         LUT_cube = LUT3D.linear_table(size)
         RGB = np.reshape(LUT_cube, (-1, 3))
         LUT = LUT3D(
