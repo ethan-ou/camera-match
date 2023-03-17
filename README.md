@@ -19,9 +19,17 @@ Currently, `camera_match` implements the following models:
 pip install camera_match[RBF]
 ```
 
+If you don't need to create LUT's using RBF, you can install the base library:
+
+```bash
+pip install camera_match
+```
+
 ## Examples
 
 ### Creating a 3x3 Matrix
+
+A simple matrix that can be used with Resolve's Colour Mixer or any RGB matrix. Can only capture linear changes in colour.
 
 ```python
 import numpy as np
@@ -58,6 +66,8 @@ print(matrix.matrix)
 ```
 
 ### Creating a LUT using RBF
+
+Radial Basis Functions (RBF) allows you to create a LUT that smoothly maps your dataset in 3D. This means you can capture complex colour responses that linear matricies can't capture.
 
 ```python
 import numpy as np
