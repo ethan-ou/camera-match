@@ -11,6 +11,12 @@ Currently, `camera_match` implements the following models:
 -   RGB Curve Interpolation
 -   Radial Basis Functions
 
+## Playground
+
+If you want to use the library without installing anything, I recommend using the Notebook below.
+
+<a href="https://colab.research.google.com/github/ethan-ou/camera-match/blob/main/examples/Camera_Match.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+
 ## Installation
 
 (Recommended) Install the full package with the optional RBF library:
