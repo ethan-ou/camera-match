@@ -7,7 +7,7 @@ from typing import Union, Literal, Any
 
 DifferenceMetric = Union[Literal["MSE", "RMSE", "Weighted Euclidean", "Delta E", "Delta E Power"], str]
 
-def colour_difference(source: NDArray[Any], target: NDArray[Any], metric: DifferenceMetric) -> Any:
+def colour_difference(source: NDArray[Any], target: NDArray[Any], metric: DifferenceMetric="Delta E") -> Any:
     difference_metrics = {
         "MSE": MSE,
         "RMSE": RMSE,
