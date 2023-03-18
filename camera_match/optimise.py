@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.optimize import least_squares, minimize
+from scipy.optimize import minimize
 from camera_match.metrics import colour_difference
 
 from typing import Any
@@ -34,14 +34,10 @@ from camera_match.metrics import DifferenceMetric
 #     return nodes
 
 class NodeOptimiser:
-    def __init__(self, fn, matrix, fn_args=None, ftol=1e-5, loss='soft_l1', max_nfev=None, verbose=0, metrics=None):
+    def __init__(self, fn, matrix, fn_args=None, metrics=None):
         self.fn = fn
         self.matrix = matrix
         self.fn_args = fn_args
-        self.ftol = ftol
-        self.loss = loss
-        self.max_nfev = max_nfev
-        self.verbose = verbose
 
         if isinstance(metrics, str):
             metrics = [metrics]
@@ -54,8 +50,7 @@ class NodeOptimiser:
     def solve(self, source, target):
         matrix = self.matrix
         for metric in self.metrics:
-            matrix = least_squares(self._solve_fn, matrix.flatten(), ftol=self.ftol,
-                                   loss=self.loss, max_nfev=self.max_nfev, verbose=self.verbose,
+            matrix = minimize(self._solve_fn, matrix.flatten(), method='CG', options={'maxiter':32},
                                    args=(self.matrix.shape, self.fn, self.fn_args, source, target, metric)
                                    ).x
         
@@ -73,6 +68,7 @@ class NodeOptimiser:
             source = fn(source, matrix)
 
         return colour_difference(source=source, target=target, metric=metric)
+
 
 
 # class PipelineOptimiser:
