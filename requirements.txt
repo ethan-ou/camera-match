@@ -1,5 +1,5 @@
 numpy
-colour-science>=0.3.16
+colour-science>=0.4.2
 scipy
 matplotlib
 xalglib

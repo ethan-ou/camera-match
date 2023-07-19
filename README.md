@@ -116,19 +116,19 @@ Since this node is just a convenience wrapper around the Colour library, you can
 
 ```python
 # Transform from LogC -> Linear
-CST(source_gamma="ALEXA Log C")
+CST(source_gamma='ARRI LogC3')
 
 # Transform from Linear -> S-Log3
 CST(target_gamma="S-Log3")
 
 # Transform from LogC -> SLog3
-CST(source_gamma="ALEXA Log C", target_gamma="S-Log3")
+CST(source_gamma='ARRI LogC3', target_gamma="S-Log3")
 
 # Transform from S-Gamut3.Cine -> Blackmagic Wide Gamut
 CST(source_colourspace="S-Gamut3.Cine", target_colourspace="Blackmagic Wide Gamut")
 
 # Combining a gamma and colourspace transform
-CST(source_gamma="Blackmagic Film Generation 5", source_colourspace="Blackmagic Wide Gamut", target_gamma="ALEXA Log C", target_colourspace="ARRI Wide Gamut 3")
+CST(source_gamma="Blackmagic Film Generation 5", source_colourspace="Blackmagic Wide Gamut", target_gamma='ARRI LogC3', target_colourspace="ARRI Wide Gamut 3")
 ```
 
 ### Building a Pipeline
@@ -160,7 +160,7 @@ alexa_data = np.array([
 ])
 
 pipeline = Pipeline([
-    [CST(source_gamma="ALEXA Log C"), CST(source_gamma="S-Log3")], # Linearises source and target camera data differently.
+    [CST(source_gamma='ARRI LogC3'), CST(source_gamma="S-Log3")], # Linearises source and target camera data differently.
     LinearMatrix()
 ])
 
