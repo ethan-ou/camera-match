@@ -9,7 +9,7 @@ from numpy.typing import NDArray
 # xalglib only available in Windows & Linux(?)
 try:
     from xalglib import xalglib
-except ImportError:
+except (ImportError, OSError):
     import warnings
     warnings.warn("RBF library cannot be loaded.", ImportWarning)
 
