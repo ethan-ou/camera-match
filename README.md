@@ -107,3 +107,74 @@ rbf.plot()
 # Export as a LUT:
 rbf.export_LUT(path="LUT.cube")
 ```
+
+### Using CST Nodes
+
+Similar to Davinci Resolve, the CST node can be used to transform colour spaces and gammas.
+
+Since this node is just a convenience wrapper around the Colour library, you can use any of the options listed on their docs including [gamma encodings](https://colour.readthedocs.io/en/latest/generated/colour.cctf_decoding.html) and [colour spaces](https://colour.readthedocs.io/en/latest/generated/colour.RGB_COLOURSPACES.html).
+
+```python
+# Transform from LogC -> Linear
+CST(source_gamma="ALEXA Log C")
+
+# Transform from Linear -> S-Log3
+CST(target_gamma="S-Log3")
+
+# Transform from LogC -> SLog3
+CST(source_gamma="ALEXA Log C", target_gamma="S-Log3")
+
+# Transform from S-Gamut3.Cine -> Blackmagic Wide Gamut
+CST(source_colourspace="S-Gamut3.Cine", target_colourspace="Blackmagic Wide Gamut")
+
+# Combining a gamma and colourspace transform
+CST(source_gamma="Blackmagic Film Generation 5", source_colourspace="Blackmagic Wide Gamut", target_gamma="ALEXA Log C", target_colourspace="ARRI Wide Gamut 3")
+```
+
+### Building a Pipeline
+
+To create more complex colour pipelines, you can use the Pipeline object to chain multiple nodes together. Here's an example using a LinearMatrix to colour match two digital cameras.
+
+```python
+import numpy as np
+from camera_match import (
+    CST,
+    LinearMatrix,
+    Pipeline
+)
+
+# Import corresponding colour patches for your target camera:
+sony_data = np.array([
+    [0.0537128634751, 0.0549002364278, 0.0521950721741],
+    [0.0779063776135, 0.0621158666909, 0.0541097335517],
+    [0.051306720823, 0.0570512823761, 0.0635398775339]
+    # ...Additional colour samples
+])
+
+# Import samples of a colour chart for your source camera:
+alexa_data = np.array([
+    [0.0460915677249, 0.0414372496307, 0.0392063446343],
+    [0.0711114183068, 0.0562727414072, 0.0510282665491],
+    [0.0467581525445, 0.0492189191282, 0.0505541190505]
+    # ...Additional colour samples
+])
+
+pipeline = Pipeline([
+    [CST(source_gamma="ALEXA Log C"), CST(source_gamma="S-Log3")], # Linearises source and target camera data differently.
+    LinearMatrix()
+])
+
+# Find the optimum values to match the two cameras:
+pipeline.solve(sony_data, alexa_data)
+
+# Plot the result:
+pipeline.plot()
+
+# Get the matrix:
+matrix = pipeline.nodes[1]
+
+# Print the matrix:
+print(matrix.matrix)
+
+
+```
