@@ -175,6 +175,4 @@ matrix = pipeline.nodes[1]
 
 # Print the matrix:
 print(matrix.matrix)
-
-
 ```
