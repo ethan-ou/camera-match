@@ -160,7 +160,7 @@ alexa_data = np.array([
 ])
 
 pipeline = Pipeline([
-    [CST(source_gamma='ARRI LogC3'), CST(source_gamma="S-Log3")], # Linearises source and target camera data differently.
+    [CST(source_gamma="S-Log3"), CST(source_gamma='ARRI LogC3')], # Linearises source and target camera data differently.
     LinearMatrix()
 ])
 
