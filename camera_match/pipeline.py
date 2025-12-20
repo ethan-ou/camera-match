@@ -1,12 +1,10 @@
 from typing import Optional
 from camera_match import Node
 
-class Pipeline(Node):
-    def __init__(self, nodes: Optional[list[Node]]=None):
-        self.nodes = nodes
 
-        if self.nodes is None:
-            self.nodes = []
+class Pipeline(Node):
+    def __init__(self, nodes: Optional[list[Node | list[Node]]] = None):
+        self.nodes: list[Node | list[Node]] = nodes if nodes is not None else []
 
         for node in self.nodes:
             if isinstance(node, list):
@@ -15,11 +13,12 @@ class Pipeline(Node):
                         f"Cannot have more than two nodes for a single step of the pipeline."
                     )
 
-    def solve(self, source, target):        
+    def solve(self, source, target):
         for node in self.nodes:
             if isinstance(node, list):
                 if len(node) == 2:
-                    source_node, target_node = node
+                    source_node: Node = node[0]
+                    target_node: Node = node[1]
                     target = target_node(target)
                     source_node.solve(source, target)
                     source = source_node(source)

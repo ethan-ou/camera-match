@@ -15,4 +15,5 @@ Breaking Changes:
 
 Other Changes:
 
+-   Update Camera Match Jupyter notebook
 -   Update to using uv and pyproject.toml for dependencies.

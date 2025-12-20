@@ -1,3 +1,4 @@
+from colour.io.luts import LUT3x1D
 import numpy as np
 from camera_match import (
     Lift,
@@ -6,7 +7,7 @@ from camera_match import (
     CurvesInterpolation,
     CurvesEMOR,
     LinearMatrix,
-    RBF,
+    LUT3D,
     Pipeline,
 )
 
@@ -725,8 +726,8 @@ class TestPipeline:
         pipeline.solve(RGB_A, RGB_B)
         np.testing.assert_allclose(pipeline(RGB_A), RGB_C, atol=0.00001)
 
-    def test_rbf(self):
-        pipeline = Pipeline([RBF()])
+    def test_lut3d(self):
+        pipeline = Pipeline([LUT3D()])
 
         pipeline.solve(bmpcc_data, film_data)
         source = pipeline(bmpcc_data)
