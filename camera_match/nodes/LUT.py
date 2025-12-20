@@ -43,31 +43,41 @@ class LUT3D(Node):
         """Fully vectorized trilinear interpolation weights."""
         N = points.shape[0]
         n = self.size
-        coords, weights = [], []
+
+        points_clipped = np.clip(points, 0, 1)
+        coords = np.empty((N, 3), dtype=int)
+        weights = np.empty((N, 3))
 
         for d in range(3):
-            p_d = np.clip(points[:, d], 0, 1)
+            p_d = points_clipped[:, d]
             pos = np.searchsorted(levels[d], p_d) - 1
             pos = np.clip(pos, 0, n - 2)
-            d0, d1 = levels[d][pos], levels[d][pos + 1]
-            w1 = np.divide(
-                (p_d - d0), (d1 - d0), out=np.zeros_like(p_d), where=(d1 - d0) != 0
-            )
-            coords.append(pos)
-            weights.append(w1)
+            coords[:, d] = pos
+            d0 = levels[d][pos]
+            d1 = levels[d][pos + 1]
+            diff = d1 - d0
+            weights[:, d] = np.where(diff != 0, (p_d - d0) / diff, 0)
 
-        W_data = np.zeros((N, 8))
-        I_cols = np.zeros((N, 8), dtype=int)
+        # Pre-compute weight complements
+        w_comp = 1 - weights
 
-        for i in range(8):
-            bz, by, bx = (i >> 2) & 1, (i >> 1) & 1, i & 1
-            w = (
-                (weights[0] if bx else 1 - weights[0])
-                * (weights[1] if by else 1 - weights[1])
-                * (weights[2] if bz else 1 - weights[2])
-            )
-            idx = (coords[0] + bx) + (coords[1] + by) * n + (coords[2] + bz) * n**2
-            W_data[:, i], I_cols[:, i] = w, idx
+        # Binary pattern: bx, by, bz for 8 corners
+        bx = np.array([0, 1, 0, 1, 0, 1, 0, 1])
+        by = np.array([0, 0, 1, 1, 0, 0, 1, 1])
+        bz = np.array([0, 0, 0, 0, 1, 1, 1, 1])
+
+        # Compute all weights at once using broadcasting
+        wx = np.where(bx[:, None], weights[:, 0], w_comp[:, 0])  # (8, N)
+        wy = np.where(by[:, None], weights[:, 1], w_comp[:, 1])
+        wz = np.where(bz[:, None], weights[:, 2], w_comp[:, 2])
+        W_data = (wx * wy * wz).T  # (N, 8)
+
+        # Compute all indices at once
+        I_cols = (
+            (coords[:, None, 0] + bx)
+            + (coords[:, None, 1] + by) * n
+            + (coords[:, None, 2] + bz) * n * n
+        )  # (N, 8)
 
         rows = np.repeat(np.arange(N), 8)
         return sparse.csr_matrix(
@@ -213,24 +223,38 @@ class LUT2D(Node):
         # Normalize and find indices
         coords = np.clip(pq, 0, 1) * (n - 1)
         idx0 = np.floor(coords).astype(int).clip(0, n - 2)
-        idx1 = idx0 + 1
         frac = coords - idx0
 
-        # Calculate 4-point weights
-        w_p1 = frac[:, 0]
-        w_p0 = 1.0 - w_p1
-        w_q1 = frac[:, 1]
-        w_q0 = 1.0 - w_q1
+        # Pre-compute weight complements for efficiency
+        w_p = frac[:, 0]
+        w_q = frac[:, 1]
+        w_p_comp = 1.0 - w_p
+        w_q_comp = 1.0 - w_q
+
+        # Compute all 4 weights in vectorized form (avoiding redundant multiplications)
+        W_data = np.stack(
+            [
+                w_p_comp * w_q_comp,  # (0, 0)
+                w_p * w_q_comp,  # (1, 0)
+                w_p_comp * w_q,  # (0, 1)
+                w_p * w_q,  # (1, 1)
+            ],
+            axis=1,
+        ).ravel()  # (N, 4) -> (N*4,)
 
         # Map 2D indices to 1D lattice indices (F-order: p moves fastest)
-        i00 = idx0[:, 0] + idx0[:, 1] * n
-        i10 = idx1[:, 0] + idx0[:, 1] * n
-        i01 = idx0[:, 0] + idx1[:, 1] * n
-        i11 = idx1[:, 0] + idx1[:, 1] * n
+        idx1 = idx0 + 1
+        I_cols = np.stack(
+            [
+                idx0[:, 0] + idx0[:, 1] * n,
+                idx1[:, 0] + idx0[:, 1] * n,
+                idx0[:, 0] + idx1[:, 1] * n,
+                idx1[:, 0] + idx1[:, 1] * n,
+            ],
+            axis=1,
+        ).ravel()  # (N, 4) -> (N*4,)
 
-        W_data = np.concatenate([w_p0 * w_q0, w_p1 * w_q0, w_p0 * w_q1, w_p1 * w_q1])
-        I_cols = np.concatenate([i00, i10, i01, i11])
-        rows = np.tile(np.arange(N), 4)
+        rows = np.repeat(np.arange(N), 4)
 
         return sparse.csr_matrix((W_data, (rows, I_cols)), shape=(N, self.m))
 
@@ -283,22 +307,22 @@ class LUT2D(Node):
         idx1 = idx0 + 1
         frac = coords - idx0
 
-        # Fetch surrounding nodes
-        c00 = self.table[idx0[:, 0], idx0[:, 1]]
-        c10 = self.table[idx1[:, 0], idx0[:, 1]]
-        c01 = self.table[idx0[:, 0], idx1[:, 1]]
-        c11 = self.table[idx1[:, 0], idx1[:, 1]]
-
-        # Bilinear interpolation weights
+        # Pre-compute weight complements
         wp = frac[:, 0:1]
         wq = frac[:, 1:2]
+        wp_comp = 1 - wp
+        wq_comp = 1 - wq
 
-        # Combine
+        # Fetch surrounding nodes - use advanced indexing once per corner
+        idx0_p, idx0_q = idx0[:, 0], idx0[:, 1]
+        idx1_p, idx1_q = idx1[:, 0], idx1[:, 1]
+
+        # Bilinear interpolation with pre-computed complements
         ratios_out = (
-            c00 * (1 - wp) * (1 - wq)
-            + c10 * wp * (1 - wq)
-            + c01 * (1 - wp) * wq
-            + c11 * wp * wq
+            self.table[idx0_p, idx0_q] * wp_comp * wq_comp
+            + self.table[idx1_p, idx0_q] * wp * wq_comp
+            + self.table[idx0_p, idx1_q] * wp_comp * wq
+            + self.table[idx1_p, idx1_q] * wp * wq
         )
 
         # Post-process: rescale by original sum
