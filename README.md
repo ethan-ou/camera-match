@@ -4,12 +4,11 @@
 
 Currently, `camera_match` implements the following models:
 
--   Linear Colour Correction Matrix
--   Root Polynomial Matrix
--   Steve Yedlin's Tetrahedral Matrix
--   (Experimental) EMoR Response Curves
--   RGB Curve Interpolation
--   Radial Basis Functions
+-   [2D LUT (LUT2D)](https://library.imaging.org/cic/articles/21/1/art00046)
+-   [Nonuniform Lattice Regression (LUT3D)](https://link.springer.com/chapter/10.1007/978-3-642-33718-5_40)
+-   3x3 Matrix (LinearMatrix)
+-   Root Polynomial Matrix (RootPolynomialMatrix)
+-   Steve Yedlin's Tetra (TetrahedralMatrix)
 
 ## Playground
 
@@ -19,17 +18,65 @@ If you want to use the library without installing anything, I recommend using th
 
 ## Installation
 
-(Recommended) Install the full package with the optional RBF library:
-
-```bash
-pip install camera_match[RBF]
-```
-
-If you don't need to create LUT's using RBF, you can install the base library:
-
 ```bash
 pip install camera_match
 ```
+
+## Camera Matching Methods
+
+### Method 1: 3x3 Matrix + RGB Curves
+
+A 3x3 matrix is a tool that changes the amount of Red, Green, Blue in each channel, as well as how Red interacts with Green and Blue and vice versa. This is a simple and powerful tool that's built into each camera's colour processing.
+
+When digital cameras capture light, they take raw image data, apply a 3x3 matrix then apply a gamma curve (e.g. SLog3, Gamma 2.4). This 3x3 matrix is decided by the camera's engineers and is able to change a number of colour characteristics of the camera. For instance:
+
+-   Red tail lights and skin tones can be bent towards pink or orange
+-   Blues can be bent towards navy or cyan
+-   Saturation of different channels can be increased by channel
+
+To change this 3x3 matrix, we need to remove our camera's log curve and transform it to linear space. There we can change the matrix that's been given to our liking.
+
+For more on how 3x3 matricies can be used, see Juan Melara's post on [creating a match between Blackmagic cameras and an Arri Alexa](https://juanmelara.com.au/products/bmpcc-6k-to-alexa-powergrade-and-luts).
+
+Benefits of a 3x3 matrix:
+
+-   Linear and exposure invariant
+-   Can be applied and adjusted directly in colour grading software (e.g. Resolve's RGB Mixer)
+-   Reversible
+
+The flaws of a 3x3 matrix:
+
+-   Can't give control over colour luminance (e.g. make blue darker)
+-   Can't create particular hue variations (e.g. can't bend yellow towards orange and blue towards purple)
+-   Can't change hue and saturation for many colours e.g. cyan, purple
+-   Can't capture non-linear colour responses (e.g. hue bends from green to yellow)
+-   Even after correction, can still have major differences in delta E
+
+For more complex situations, a 2D or 3D LUT is necessary to capture colour changes:
+
+### Method 2: 2D LUT + RGB Curves
+
+Paper: [Camera Color Correction Using Two-Dimensional Transforms by Jon S. McElvain, Walter Gish](https://library.imaging.org/cic/articles/21/1/art00046)
+
+A 2D LUT creates a slice of red, green and blue channels and tries to optimise the slice so that colour errors are lower for each channel. Since there's many more degrees of freedom, a 2D LUT is able to capture complex colour shifts and do so across the whole gamut. Overall, a 2D LUT leads to lower colour differences than a 3x3 matrix.
+
+Similar to the 3x3 matrix, a 2D LUT maintains a linear relationship between brightness levels, which means it has fewer drawbacks than a 3D LUT and doesn't clip highlights or shadows. For digital cameras, I'd recommend RGB curves and a 2D LUT for camera matching.
+
+### Method 3: 3D LUT
+
+Paper: [Nonuniform Lattice Regression for Modeling the Camera Imaging Pipeline by Hai Ting Lin, Zheng Lu, Seon Joo Kim & Michael S. Brown](https://link.springer.com/chapter/10.1007/978-3-642-33718-5_40)
+
+LUT3D applies a full 3D colour match between two cameras. This means the colour response is captured across highlight and shadow areas, as well as applying a curve to the image.
+
+This is the most challenging model to gather data for since a lack of data in highlights, shadows and saturated colours can lead to a LUT being clipped early. It's also the model that can break exposure invariance: raising exposure before the LUT can affect the hue, saturation and lightness of colours.
+
+For matching digital to film, this is the model that's able to replicate the most characteristics from the data.
+
+## Gathering Data
+
+For data gathering, I personally use [colour-calibration](https://github.com/ethan-ou/colour-calibration). This is a website which shows thousands of colour patches that I display on an iPad in front of two cameras. I then vary brightness levels on the iPad to gather data across the exposure range.
+
+This creates thousands of colour patches which I then take into Resolve and split into .exr frames. Using a script in Python, I extract the colour from each frame, leading to a .csv file with the colour patches. I can then load this data into camera_match and generate a LUT.
 
 ## Examples
 
@@ -71,13 +118,51 @@ print(matrix.matrix)
 
 ```
 
-### Creating a LUT using RBF
+### Creating a TetrahedralMatrix
 
-Radial Basis Functions (RBF) allows you to create a LUT that smoothly maps your dataset in 3D. This means you can capture complex colour responses that linear matricies can't capture.
+Create a match using Steve Yedlin's Tetra.
 
 ```python
 import numpy as np
-from camera_match import RBF
+from camera_match import TetrahedralMatrix
+
+# Import samples of a colour chart for your source camera:
+bmpcc_data = np.array([
+    [0.0460915677249, 0.0414372496307, 0.0392063446343],
+    [0.0711114183068, 0.0562727414072, 0.0510282665491],
+    [0.0467581525445, 0.0492189191282, 0.0505541190505]
+    # ...Additional colour samples
+])
+
+# Import corresponding colour patches for your target camera:
+film_data = np.array([
+    [0.0537128634751, 0.0549002364278, 0.0521950721741],
+    [0.0779063776135, 0.0621158666909, 0.0541097335517],
+    [0.051306720823, 0.0570512823761, 0.0635398775339]
+    # ...Additional colour samples
+])
+
+# Create a new TetrahedralMatrix:
+matrix = TetrahedralMatrix()
+
+# Find the optimum values to match the two cameras:
+matrix.solve(bmpcc_data, film_data)
+
+# Plot the result:
+matrix.plot()
+
+# Print the matrix:
+print(matrix.matrix)
+
+```
+
+### Creating a LUT using LUT2D
+
+For data-heavy profiling of two cameras.
+
+```python
+import numpy as np
+from camera_match import LUT2D
 
 # Import samples of a colour chart for your source camera:
 bmpcc_data = np.array([
@@ -96,16 +181,16 @@ film_data = np.array([
 ])
 
 # Create a new RBF node:
-rbf = RBF()
+lut_2d = LUT2D()
 
 # Find the optimum values to match the two cameras:
-rbf.solve(bmpcc_data, film_data)
+lut_2d.solve(bmpcc_data, film_data)
 
 # Plot the result:
-rbf.plot()
+lut_2d.plot()
 
 # Export as a LUT:
-rbf.export_LUT(path="LUT.cube")
+lut_2d.export_LUT(path="LUT.cube")
 ```
 
 ### Using CST Nodes

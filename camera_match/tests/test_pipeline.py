@@ -1,12 +1,9 @@
 import numpy as np
 from camera_match import (
-    Lift,
-    Gain,
     CST,
-    CurvesInterpolation,
     CurvesEMOR,
     LinearMatrix,
-    RBF,
+    LUT2D,
     Pipeline,
 )
 
@@ -725,13 +722,13 @@ class TestPipeline:
         pipeline.solve(RGB_A, RGB_B)
         np.testing.assert_allclose(pipeline(RGB_A), RGB_C, atol=0.00001)
 
-    def test_rbf(self):
-        pipeline = Pipeline([RBF()])
+    def test_lut2d(self):
+        pipeline = Pipeline([LUT2D()])
 
         pipeline.solve(bmpcc_data, film_data)
         source = pipeline(bmpcc_data)
 
-        np.testing.assert_allclose(source, film_data, atol=0.14)
+        np.testing.assert_allclose(source, film_data, atol=0.3)
 
     def test_curves_matrix(self):
         pipeline = Pipeline([CurvesEMOR(), LinearMatrix()])

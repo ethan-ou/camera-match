@@ -1,7 +1,5 @@
 import numpy as np
-from camera_match import (
-    RBF
-)
+from camera_match import LUT3D, LUT2D
 
 # From https://github.com/Polyrhythm/create_lut/blob/main/main.py
 MATRIX_TEST = np.array(
@@ -63,17 +61,17 @@ MATRIX_REFERENCE = np.array(
 )
 
 
-
-class TestRBF:
-    def test_solve(self):
-        node = RBF()
+class TestLUT:
+    def test_lut_3d(self):
+        node = LUT3D()
         node.solve(MATRIX_TEST, MATRIX_REFERENCE)
         source = node(MATRIX_TEST)
 
-        np.testing.assert_allclose(
-            source,
-            MATRIX_REFERENCE,
-            atol=0.06
-        )
+        np.testing.assert_allclose(source, MATRIX_REFERENCE, atol=0.05)
 
+    def test_lut_2d(self):
+        node = LUT2D()
+        node.solve(MATRIX_TEST, MATRIX_REFERENCE)
+        source = node(MATRIX_TEST)
 
+        np.testing.assert_allclose(source, MATRIX_REFERENCE, atol=0.2)

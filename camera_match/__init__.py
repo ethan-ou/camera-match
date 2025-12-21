@@ -2,14 +2,15 @@
 
 __author__ = """Ethan Ou"""
 __email__ = "ethantim@gmail.com"
-__version__ = "0.0.3"
+__version__ = "0.1.0"
 
 from .nodes import (
     Lift,
     Gain,
     CurvesInterpolation,
     CurvesEMOR,
-    RBF,
+    LUT3D,
+    LUT2D,
     LUT,
     LinearMatrix,
     RootPolynomialMatrix,

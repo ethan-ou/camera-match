@@ -1,10 +1,6 @@
 import numpy as np
 
-from camera_match import (
-    LinearMatrix,
-    RootPolynomialMatrix,
-    TetrahedralMatrix
-)
+from camera_match import LinearMatrix, RootPolynomialMatrix, TetrahedralMatrix
 
 MATRIX_TEST = np.array(
     [
@@ -64,6 +60,7 @@ MATRIX_REFERENCE = np.array(
     ]
 )
 
+
 class TestLinearMatrix:
 
     def test_solve(self):
@@ -75,19 +72,15 @@ class TestLinearMatrix:
             node.matrix,
             np.array(
                 [
-                    [ 0.7144091, -0.0087610,  0.1865459],
-                    [ 0.0666808,  0.7012258,  0.1676652],
-                    [-0.0449551,  0.1242455,  0.9705195]
+                    [0.7144091, -0.0087610, 0.1865459],
+                    [0.0666808, 0.7012258, 0.1676652],
+                    [-0.0449551, 0.1242455, 0.9705195],
                 ]
             ),
-            atol=0.02
+            atol=0.02,
         )
 
-        np.testing.assert_allclose(
-            source,
-            MATRIX_REFERENCE,
-            atol=0.17
-        )
+        np.testing.assert_allclose(source, MATRIX_REFERENCE, atol=0.17)
 
 
 class TestRootPolynomialMatrix:
@@ -102,19 +95,15 @@ class TestRootPolynomialMatrix:
             node.matrix,
             np.array(
                 [
-                    [ 0.871636, -0.017426, -0.078651, -0.282616,  0.480013, -0.054602],
-                    [ 0.121821,  0.929468,  0.340336, -0.207015, -0.351305,  0.069235],
-                    [ 0.219242,  0.427197,  1.529616, -0.369279, -0.515248, -0.364217]
+                    [0.871636, -0.017426, -0.078651, -0.282616, 0.480013, -0.054602],
+                    [0.121821, 0.929468, 0.340336, -0.207015, -0.351305, 0.069235],
+                    [0.219242, 0.427197, 1.529616, -0.369279, -0.515248, -0.364217],
                 ]
             ),
-            atol=0.05
+            atol=0.05,
         )
 
-        np.testing.assert_allclose(
-            source,
-            MATRIX_REFERENCE,
-            atol=0.07
-        )
+        np.testing.assert_allclose(source, MATRIX_REFERENCE, atol=0.07)
 
 
 class TestTetrahedralMatrix:
@@ -128,19 +117,15 @@ class TestTetrahedralMatrix:
             node.matrix,
             np.array(
                 [
-                    [  7.87893739e-01,   6.44334573e-02,   6.14256000e-04],
-                    [  6.17360821e-01,   7.54680150e-01,   9.95569152e-02],
-                    [  1.61126654e-01,   7.69362798e-01,   1.90733233e-01],
-                    [  2.71190988e-01,   8.27376560e-01,   1.24083296e+00],
-                    [  6.60064011e-02,   2.18117094e-01,   1.24311189e+00],
-                    [  6.02044690e-01,   2.46245987e-01,   7.78907346e-01]
+                    [7.87893739e-01, 6.44334573e-02, 6.14256000e-04],
+                    [1.61126654e-01, 7.69362798e-01, 1.90733233e-01],
+                    [6.60064011e-02, 2.18117094e-01, 1.24311189e00],
+                    [2.71190988e-01, 8.27376560e-01, 1.24083296e00],
+                    [6.02044690e-01, 2.46245987e-01, 7.78907346e-01],
+                    [6.17360821e-01, 7.54680150e-01, 9.95569152e-02],
                 ]
             ),
-            atol=0.05
+            atol=0.05,
         )
 
-        np.testing.assert_allclose(
-            source,
-            MATRIX_REFERENCE,
-            atol=0.15
-        )
+        np.testing.assert_allclose(source, MATRIX_REFERENCE, atol=0.15)
