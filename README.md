@@ -189,7 +189,7 @@ film_data = np.array([
     # ...Additional colour samples
 ])
 
-# Create a new RBF node:
+# Create a new LUT2D or LUT3D node:
 lut_2d = LUT2D()
 
 # Find the optimum values to match the two cameras:
