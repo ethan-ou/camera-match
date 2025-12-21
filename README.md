@@ -82,40 +82,49 @@ This creates thousands of colour patches which I then take into Resolve and spli
 
 ### Creating a 3x3 Matrix
 
-A simple matrix that can be used with Resolve's Colour Mixer or any RGB matrix. Can only capture linear changes in colour.
+A simple matrix that can be used with Resolve's Colour Mixer or any RGB matrix. Can only capture linear changes in colour. We use the Pipeline object and a Colour Space Transform to transform our data into linear.
 
 ```python
 import numpy as np
-from camera_match import LinearMatrix
-
-# Import samples of a colour chart for your source camera:
-bmpcc_data = np.array([
-    [0.0460915677249, 0.0414372496307, 0.0392063446343],
-    [0.0711114183068, 0.0562727414072, 0.0510282665491],
-    [0.0467581525445, 0.0492189191282, 0.0505541190505]
-    # ...Additional colour samples
-])
+from camera_match import (
+    CST,
+    LinearMatrix,
+    Pipeline
+)
 
 # Import corresponding colour patches for your target camera:
-film_data = np.array([
+sony_data = np.array([
     [0.0537128634751, 0.0549002364278, 0.0521950721741],
     [0.0779063776135, 0.0621158666909, 0.0541097335517],
     [0.051306720823, 0.0570512823761, 0.0635398775339]
     # ...Additional colour samples
 ])
 
-# Create a new LinearMatrix:
-matrix = LinearMatrix()
+# Import samples of a colour chart for your source camera:
+alexa_data = np.array([
+    [0.0460915677249, 0.0414372496307, 0.0392063446343],
+    [0.0711114183068, 0.0562727414072, 0.0510282665491],
+    [0.0467581525445, 0.0492189191282, 0.0505541190505]
+    # ...Additional colour samples
+])
+
+pipeline = Pipeline([
+    [CST(source_gamma="S-Log3"), CST(source_gamma="ARRI LogC3")], # Linearises source and target camera data differently.
+    LinearMatrix(),
+    CST(target_gamma="ARRI LogC3")
+])
 
 # Find the optimum values to match the two cameras:
-matrix.solve(bmpcc_data, film_data)
+pipeline.solve(sony_data, alexa_data)
 
 # Plot the result:
-matrix.plot()
+pipeline.plot()
+
+# Get the matrix:
+matrix = pipeline.nodes[1]
 
 # Print the matrix:
 print(matrix.matrix)
-
 ```
 
 ### Creating a TetrahedralMatrix
@@ -156,13 +165,13 @@ print(matrix.matrix)
 
 ```
 
-### Creating a LUT using LUT2D
+### Creating a LUT using LUT2D or LUT3D
 
 For data-heavy profiling of two cameras.
 
 ```python
 import numpy as np
-from camera_match import LUT2D
+from camera_match import LUT2D # For 3D LUT matching, replace this import with LUT3D
 
 # Import samples of a colour chart for your source camera:
 bmpcc_data = np.array([
@@ -214,50 +223,4 @@ CST(source_colourspace="S-Gamut3.Cine", target_colourspace="Blackmagic Wide Gamu
 
 # Combining a gamma and colourspace transform
 CST(source_gamma="Blackmagic Film Generation 5", source_colourspace="Blackmagic Wide Gamut", target_gamma='ARRI LogC3', target_colourspace="ARRI Wide Gamut 3")
-```
-
-### Building a Pipeline
-
-To create more complex colour pipelines, you can use the Pipeline object to chain multiple nodes together. Here's an example using a LinearMatrix to colour match two digital cameras.
-
-```python
-import numpy as np
-from camera_match import (
-    CST,
-    LinearMatrix,
-    Pipeline
-)
-
-# Import corresponding colour patches for your target camera:
-sony_data = np.array([
-    [0.0537128634751, 0.0549002364278, 0.0521950721741],
-    [0.0779063776135, 0.0621158666909, 0.0541097335517],
-    [0.051306720823, 0.0570512823761, 0.0635398775339]
-    # ...Additional colour samples
-])
-
-# Import samples of a colour chart for your source camera:
-alexa_data = np.array([
-    [0.0460915677249, 0.0414372496307, 0.0392063446343],
-    [0.0711114183068, 0.0562727414072, 0.0510282665491],
-    [0.0467581525445, 0.0492189191282, 0.0505541190505]
-    # ...Additional colour samples
-])
-
-pipeline = Pipeline([
-    [CST(source_gamma="S-Log3"), CST(source_gamma='ARRI LogC3')], # Linearises source and target camera data differently.
-    LinearMatrix()
-])
-
-# Find the optimum values to match the two cameras:
-pipeline.solve(sony_data, alexa_data)
-
-# Plot the result:
-pipeline.plot()
-
-# Get the matrix:
-matrix = pipeline.nodes[1]
-
-# Print the matrix:
-print(matrix.matrix)
 ```
