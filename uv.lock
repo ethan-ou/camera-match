@@ -9,7 +9,7 @@ resolution-markers = [
 
 [[package]]
 name = "camera-match"
-version = "0.1.0"
+version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "colour-science", version = "0.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
@@ -34,6 +34,9 @@ dev = [
     { name = "ruff" },
     { name = "ty" },
 ]
+rbf = [
+    { name = "xalglib" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -46,8 +49,9 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.4.0" },
     { name = "scipy" },
     { name = "ty", marker = "extra == 'dev'" },
+    { name = "xalglib", marker = "extra == 'rbf'" },
 ]
-provides-extras = ["dev"]
+provides-extras = ["rbf", "dev"]
 
 [[package]]
 name = "colorama"
@@ -1959,6 +1963,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/72/94/1a15dd82efb362ac8
 wheels = [
     { url = "https://files.pythonhosted.org/packages/18/67/36e9267722cc04a6b9f15c7f3441c2363321a3ea07da7ae0c0707beb2a9c/typing_extensions-4.15.0-py3-none-any.whl", hash = "sha256:f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548", size = 44614, upload-time = "2025-08-25T13:49:24.86Z" },
 ]
+
+[[package]]
+name = "xalglib"
+version = "3.16.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/85/95/efae06e7b90c0ea636d848c23bfe4822bfccb8052e11f04908feb07a9972/xalglib-3.16.0.tar.gz", hash = "sha256:9f586a9c5c2a9ba99fef982b7a1a8e05ba79f3d1ad3d791939e09586b304e203", size = 2790333, upload-time = "2020-12-12T08:37:09.144Z" }
 
 [[package]]
 name = "zipp"

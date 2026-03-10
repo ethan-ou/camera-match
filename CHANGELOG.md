@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0
+
+-   Re-add RBF (Radial Basis Function) as an optional method for 3D LUT generation.
+-   RBF requires the `xalglib` package, available as an optional extra: `pip install camera-match[rbf]`.
+-   Update examples and documentation to include RBF usage.
+
 ## 0.0.3
 
 -   Update minimum colour-science version to 0.4.2. In this version the ARRI LogC encoding names have changed.

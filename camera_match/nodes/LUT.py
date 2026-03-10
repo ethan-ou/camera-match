@@ -3,11 +3,16 @@ from scipy import sparse
 from scipy.sparse.linalg import spsolve
 from scipy.ndimage import gaussian_filter1d
 from colour.algebra import table_interpolation_tetrahedral
-from colour import read_LUT
+from colour import LUT3D as ColourLUT3D, read_LUT
 from .Node import Node
 
 from typing import Any, Tuple
 from numpy.typing import NDArray
+
+try:
+    from xalglib import xalglib
+except (ImportError, OSError):
+    xalglib = None
 
 
 class LUT3D(Node):
@@ -327,6 +332,71 @@ class LUT2D(Node):
 
         # Post-process: rescale by original sum
         return (ratios_out * sigma).reshape(shape_orig)
+
+
+class RBF(Node):
+    """
+    Radial Basis Function interpolation for 3D LUT generation.
+
+    Uses the xalglib library's hierarchical RBF algorithm to interpolate
+    colour mappings across the full 3D colour space.
+
+    Requires the xalglib package: pip install xalglib
+    Note: xalglib is available on Windows and Linux only.
+    """
+
+    def __init__(self, size: int = 33, radius: float = 5.0, layers: int = 10, smoothing: float = 0.001):
+        """
+        Initialize RBF interpolator.
+
+        Args:
+            size: Number of nodes per dimension for the output LUT (e.g., 33 = 33³ grid)
+            radius: Initial radius for hierarchical RBF algorithm
+            layers: Number of layers in hierarchical algorithm
+            smoothing: Smoothing parameter for RBF fitting
+        """
+        if xalglib is None:
+            raise ImportError(
+                "xalglib is required for RBF. Install it with: pip install xalglib\n"
+                "Note: xalglib is only available on Windows and Linux."
+            )
+        self.size = size
+        self.LUT = None
+        self.radius = radius
+        self.layers = layers
+        self.smoothing = smoothing
+
+    def solve(self, source: NDArray[Any], target: NDArray[Any]) -> Tuple[NDArray[Any], NDArray[Any]]:
+        """
+        Fit the RBF model and generate a 3D LUT.
+
+        Args:
+            source: Source camera RGB values (N, 3)
+            target: Target camera RGB values (N, 3)
+        """
+        data = np.hstack((source, target))
+
+        model = xalglib.rbfcreate(3, 3)
+        xalglib.rbfsetpoints(model, data.tolist())
+        xalglib.rbfsetalgohierarchical(model, self.radius, self.layers, self.smoothing)
+        xalglib.rbfbuildmodel(model)
+
+        grid = np.linspace(0, 1, self.size).tolist()
+        table = xalglib.rbfgridcalc3v(model, grid, self.size, grid, self.size, grid, self.size)
+
+        # xalglib outputs coordinates in (z, y, x). Swapping axis 0 and 2
+        # gives (x, y, z) which is needed for the LUT table.
+        LUT_table = np.reshape(table, (self.size, self.size, self.size, 3)).swapaxes(0, 2)
+
+        self.LUT = ColourLUT3D(table=LUT_table)
+        return (self(source), target)
+
+    def __call__(self, RGB: NDArray[Any]) -> NDArray[Any]:
+        """Apply the RBF-generated LUT to RGB values."""
+        if self.LUT is None:
+            return RGB
+
+        return self.LUT.apply(RGB, interpolator=table_interpolation_tetrahedral)
 
 
 class LUT(Node):

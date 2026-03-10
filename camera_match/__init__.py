@@ -6,6 +6,7 @@ from .nodes import (
     LUT3D,
     LUT2D,
     LUT,
+    RBF,
     LinearMatrix,
     RootPolynomialMatrix,
     TetrahedralMatrix,

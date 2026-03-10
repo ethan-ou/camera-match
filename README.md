@@ -6,6 +6,7 @@ Currently, `camera_match` implements the following models:
 
 -   [2D LUT (LUT2D)](https://library.imaging.org/cic/articles/21/1/art00046)
 -   [Nonuniform Lattice Regression (LUT3D)](https://link.springer.com/chapter/10.1007/978-3-642-33718-5_40)
+-   Radial Basis Function (RBF) — requires optional `xalglib` dependency
 -   3x3 Matrix (LinearMatrix)
 -   Root Polynomial Matrix (RootPolynomialMatrix)
 -   Steve Yedlin's Tetra (TetrahedralMatrix)
@@ -19,7 +20,13 @@ If you want to use the library without installing anything, I recommend using th
 ## Installation
 
 ```bash
-pip install camera_match
+pip install camera-match
+```
+
+To use the RBF method, install with the optional `xalglib` dependency (Windows and Linux only):
+
+```bash
+pip install camera-match[rbf]
 ```
 
 ## Camera Matching Methods
@@ -71,6 +78,14 @@ LUT3D applies a full 3D colour match between two cameras. This means the colour 
 This is the most challenging model to gather data for since a lack of data in highlights, shadows and saturated colours can lead to a LUT being clipped early. It's also the model that can break exposure invariance: raising exposure before the LUT can affect the hue, saturation and lightness of colours.
 
 For matching digital to film, this is the model that's able to replicate the most characteristics from the data.
+
+### Method 4: RBF (Radial Basis Function)
+
+RBF uses radial basis function interpolation via the xalglib library to build a 3D LUT. This method is known for producing reliable, high-quality colour matches and has been a popular choice among users for its robustness.
+
+RBF works by fitting a hierarchical radial basis function model to the source/target colour pairs, then evaluating that model across a uniform 3D grid to produce a LUT. The hierarchical algorithm provides good control over smoothness and detail through its radius, layers and smoothing parameters.
+
+Note: RBF requires the `xalglib` package which is only available on Windows and Linux. Install with `pip install camera-match[rbf]`.
 
 ## Gathering Data
 
@@ -200,6 +215,43 @@ lut_2d.plot()
 
 # Export as a LUT:
 lut_2d.export_LUT(path="LUT.cube")
+```
+
+### Creating a LUT using RBF
+
+For users who prefer the RBF method. Requires `pip install camera-match[rbf]`.
+
+```python
+import numpy as np
+from camera_match import RBF
+
+# Import samples of a colour chart for your source camera:
+bmpcc_data = np.array([
+    [0.0460915677249, 0.0414372496307, 0.0392063446343],
+    [0.0711114183068, 0.0562727414072, 0.0510282665491],
+    [0.0467581525445, 0.0492189191282, 0.0505541190505]
+    # ...Additional colour samples
+])
+
+# Import corresponding colour patches for your target camera:
+film_data = np.array([
+    [0.0537128634751, 0.0549002364278, 0.0521950721741],
+    [0.0779063776135, 0.0621158666909, 0.0541097335517],
+    [0.051306720823, 0.0570512823761, 0.0635398775339]
+    # ...Additional colour samples
+])
+
+# Create a new RBF node:
+rbf = RBF()
+
+# Find the optimum values to match the two cameras:
+rbf.solve(bmpcc_data, film_data)
+
+# Plot the result:
+rbf.plot()
+
+# Export as a LUT:
+rbf.export_LUT(path="LUT.cube")
 ```
 
 ### Using CST Nodes
