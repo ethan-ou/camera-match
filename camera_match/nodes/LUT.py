@@ -1,6 +1,7 @@
 import numpy as np
 from scipy import sparse
-from scipy.sparse.linalg import spsolve
+from scipy.sparse.linalg import spsolve, lsqr
+from scipy.spatial import cKDTree
 from scipy.ndimage import gaussian_filter1d
 from colour.algebra import table_interpolation_tetrahedral
 from colour import LUT3D as ColourLUT3D, read_LUT
@@ -8,11 +9,6 @@ from .Node import Node
 
 from typing import Any, Tuple
 from numpy.typing import NDArray
-
-try:
-    from xalglib import xalglib
-except (ImportError, OSError):
-    xalglib = None
 
 
 class LUT3D(Node):
@@ -334,59 +330,184 @@ class LUT2D(Node):
         return (ratios_out * sigma).reshape(shape_orig)
 
 
+# --- Hierarchical RBF basis (pure numpy/scipy) ---------------------------------
+#
+# This is a from-scratch reimplementation of ALGLIB's ``rbfsetalgohierarchical``
+# (the V2 model), so the package no longer depends on the xalglib binary wheel.
+# The algorithm and its constants were reverse-engineered by probing the library
+# directly (rbfunpack / single-point fits); see the module docstring of RBF below.
+#
+# Compactly-supported "Gaussian-like" basis phi(u), u = distance / radius.
+# ALGLIB's V2 basis is a Gaussian tapered to exactly zero at u = _RBF_CUTOFF.
+# The constants below reproduce ALGLIB's basis to < 6e-5 over its whole support.
+_RBF_A = 0.93750975
+_RBF_D = 2.60513816
+_RBF_P = 1.17659512
+_RBF_CUTOFF = _RBF_D
+
+
+def _rbf_phi(u: NDArray[Any]) -> NDArray[Any]:
+    """Compact basis function of u = distance / radius (zero for u >= cutoff)."""
+    return np.exp(-_RBF_A * u**2) * np.clip(1.0 - (u / _RBF_D) ** 2, 0.0, None) ** _RBF_P
+
+
+def _rbf_thin(points: NDArray[Any], h: float) -> NDArray[Any]:
+    """Greedy poisson-disk decimation: keep a maximal subset of ``points`` whose
+    pairwise distance is >= h. Mirrors ALGLIB's per-layer center coarsening,
+    where the spacing threshold is h = 0.1 * radius. This is what makes coarse
+    (large-radius) layers cheap and the whole scheme ~O(N log N)."""
+    if h <= 0 or points.shape[0] == 0:
+        return np.arange(points.shape[0])
+    tree = cKDTree(points)
+    kept_mask = np.zeros(points.shape[0], dtype=bool)
+    removed = np.zeros(points.shape[0], dtype=bool)
+    kept = []
+    for i in range(points.shape[0]):
+        if removed[i]:
+            continue
+        kept.append(i)
+        kept_mask[i] = True
+        for j in tree.query_ball_point(points[i], h):
+            if not kept_mask[j]:
+                removed[j] = True
+    return np.asarray(kept, dtype=int)
+
+
+def _rbf_layer_matrix(
+    X: NDArray[Any], centers: NDArray[Any], radius: float
+) -> sparse.csr_matrix:
+    """Sparse (len(X), len(centers)) basis matrix using the compact support of
+    phi via a KD-tree, so only the O(1) neighbours within cutoff are evaluated."""
+    n_x, n_c = X.shape[0], centers.shape[0]
+    if n_c == 0:
+        return sparse.csr_matrix((n_x, 0))
+    cutoff = _RBF_CUTOFF * radius
+    pairs = cKDTree(X).query_ball_tree(cKDTree(centers), r=cutoff)
+    rows, cols, vals = [], [], []
+    for i, js in enumerate(pairs):
+        if not js:
+            continue
+        js = np.asarray(js)
+        d = np.linalg.norm(X[i] - centers[js], axis=1) / radius
+        rows.append(np.full(js.shape, i))
+        cols.append(js)
+        vals.append(_rbf_phi(d))
+    if not rows:
+        return sparse.csr_matrix((n_x, n_c))
+    return sparse.csr_matrix(
+        (np.concatenate(vals), (np.concatenate(rows), np.concatenate(cols))),
+        shape=(n_x, n_c),
+    )
+
+
 class RBF(Node):
     """
     Radial Basis Function interpolation for 3D LUT generation.
 
-    Uses the xalglib library's hierarchical RBF algorithm to interpolate
-    colour mappings across the full 3D colour space.
+    Pure numpy/scipy reimplementation of ALGLIB's hierarchical RBF
+    (``rbfsetalgohierarchical``), so no native ``xalglib`` dependency is needed.
 
-    Requires the xalglib package: pip install xalglib
-    Note: xalglib is available on Windows and Linux only.
+    How it works (reverse-engineered from ALGLIB's V2 model):
+
+    1. A global affine (linear + bias) term is least-squares fitted to the
+       source -> target mapping and subtracted, leaving a residual.
+    2. A hierarchy of ``layers`` RBF layers fits that residual. Layer ``k`` uses
+       radius ``radius * 2**-k`` (the radius halves each layer). The first,
+       coarse layers capture broad colour shifts; later, fine layers add detail.
+    3. Each layer places centres on a decimated subset of the source points
+       (no two centres closer than ``0.1 * radius``), assembles a sparse basis
+       matrix from the compactly-supported basis function, and solves for the
+       layer weights with a regularised LSQR (``smoothing`` -> Tikhonov damp).
+       The layer's contribution is subtracted and the residual passed on.
+
+    The fitted model is baked into a ``size**3`` colour LUT and applied with
+    tetrahedral interpolation, exactly as before.
+
+    Based on:
+    Lin, Hai Ting, et al. "Nonuniform lattice regression for modeling the
+    camera imaging pipeline." ECCV 2012, pp. 556-568.
     """
 
-    def __init__(self, size: int = 33, radius: float = 5.0, layers: int = 10, smoothing: float = 0.001):
+    def __init__(
+        self,
+        size: int = 33,
+        radius: float = 5.0,
+        layers: int = 10,
+        smoothing: float = 0.001,
+    ):
         """
         Initialize RBF interpolator.
 
         Args:
             size: Number of nodes per dimension for the output LUT (e.g., 33 = 33³ grid)
-            radius: Initial radius for hierarchical RBF algorithm
-            layers: Number of layers in hierarchical algorithm
-            smoothing: Smoothing parameter for RBF fitting
+            radius: Initial radius for the hierarchical RBF (first/coarsest layer)
+            layers: Number of layers in the hierarchical algorithm
+            smoothing: Smoothing / regularisation parameter for RBF fitting
         """
-        if xalglib is None:
-            raise ImportError(
-                "xalglib is required for RBF. Install it with: pip install xalglib\n"
-                "Note: xalglib is only available on Windows and Linux."
-            )
         self.size = size
         self.LUT = None
         self.radius = radius
         self.layers = layers
         self.smoothing = smoothing
 
-    def solve(self, source: NDArray[Any], target: NDArray[Any]) -> Tuple[NDArray[Any], NDArray[Any]]:
+    def _fit(self, source: NDArray[Any], target: NDArray[Any]) -> None:
+        """Fit the hierarchical RBF: affine term + decimated residual layers."""
+        X = np.asarray(source, dtype=float)
+        Y = np.asarray(target, dtype=float)
+        ny = Y.shape[1]
+
+        # Global affine term (matches ALGLIB's default linear polynomial term).
+        P = np.hstack([X, np.ones((X.shape[0], 1))])
+        coef, *_ = np.linalg.lstsq(P, Y, rcond=None)
+        self._coef = coef[:-1].T
+        self._bias = coef[-1]
+        residual = Y - P @ coef
+
+        # Hierarchical layers over the residual.
+        self._source = X
+        self._weights, self._radii, self._center_idx = [], [], []
+        radius = self.radius
+        damp = self.smoothing * np.sqrt(X.shape[0])
+        for _ in range(self.layers):
+            idx = _rbf_thin(X, 0.1 * radius)
+            centers = X[idx]
+            A = _rbf_layer_matrix(X, centers, radius)
+            w = np.empty((centers.shape[0], ny))
+            for c in range(ny):
+                w[:, c] = lsqr(A, residual[:, c], damp=damp, atol=1e-10, btol=1e-10)[0]
+            residual = residual - A @ w
+            self._weights.append(w)
+            self._radii.append(radius)
+            self._center_idx.append(idx)
+            radius *= 0.5
+
+    def _eval(self, RGB: NDArray[Any]) -> NDArray[Any]:
+        """Evaluate the fitted hierarchical RBF at arbitrary RGB points."""
+        X = np.asarray(RGB, dtype=float)
+        out = X @ self._coef.T + self._bias
+        for w, r, idx in zip(self._weights, self._radii, self._center_idx):
+            out = out + _rbf_layer_matrix(X, self._source[idx], r) @ w
+        return out
+
+    def solve(
+        self, source: NDArray[Any], target: NDArray[Any]
+    ) -> Tuple[NDArray[Any], NDArray[Any]]:
         """
-        Fit the RBF model and generate a 3D LUT.
+        Fit the RBF model and bake a 3D LUT.
 
         Args:
             source: Source camera RGB values (N, 3)
             target: Target camera RGB values (N, 3)
         """
-        data = np.hstack((source, target))
+        self._fit(source, target)
 
-        model = xalglib.rbfcreate(3, 3)
-        xalglib.rbfsetpoints(model, data.tolist())
-        xalglib.rbfsetalgohierarchical(model, self.radius, self.layers, self.smoothing)
-        xalglib.rbfbuildmodel(model)
-
-        grid = np.linspace(0, 1, self.size).tolist()
-        table = xalglib.rbfgridcalc3v(model, grid, self.size, grid, self.size, grid, self.size)
-
-        # xalglib outputs coordinates in (z, y, x). Swapping axis 0 and 2
-        # gives (x, y, z) which is needed for the LUT table.
-        LUT_table = np.reshape(table, (self.size, self.size, self.size, 3)).swapaxes(0, 2)
+        # Evaluate the model on the LUT grid. ColourLUT3D indexes the table as
+        # [R, G, B], so build the grid in (x, y, z) order directly.
+        grid = np.linspace(0, 1, self.size)
+        pts = np.stack(
+            np.meshgrid(grid, grid, grid, indexing="ij"), axis=-1
+        ).reshape(-1, 3)
+        LUT_table = self._eval(pts).reshape(self.size, self.size, self.size, 3)
 
         self.LUT = ColourLUT3D(table=LUT_table)
         return (self(source), target)

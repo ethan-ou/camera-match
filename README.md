@@ -6,7 +6,7 @@ Currently, `camera_match` implements the following models:
 
 -   [2D LUT (LUT2D)](https://library.imaging.org/cic/articles/21/1/art00046)
 -   [Nonuniform Lattice Regression (LUT3D)](https://link.springer.com/chapter/10.1007/978-3-642-33718-5_40)
--   Radial Basis Function (RBF) — requires optional `xalglib` dependency
+-   Radial Basis Function (RBF)
 -   3x3 Matrix (LinearMatrix)
 -   Root Polynomial Matrix (RootPolynomialMatrix)
 -   Steve Yedlin's Tetra (TetrahedralMatrix)
@@ -21,12 +21,6 @@ If you want to use the library without installing anything, I recommend using th
 
 ```bash
 pip install camera-match
-```
-
-To use the RBF method, install with the optional `xalglib` dependency (Windows and Linux only):
-
-```bash
-pip install camera-match[rbf]
 ```
 
 ## Camera Matching Methods
@@ -81,11 +75,9 @@ For matching digital to film, this is the model that's able to replicate the mos
 
 ### Method 4: RBF (Radial Basis Function)
 
-RBF uses radial basis function interpolation via the xalglib library to build a 3D LUT. This method is known for producing reliable, high-quality colour matches and has been a popular choice among users for its robustness.
+RBF uses radial basis function interpolation to build a 3D LUT. This method is known for producing reliable, high-quality colour matches and has been a popular choice among users for its robustness.
 
-RBF works by fitting a hierarchical radial basis function model to the source/target colour pairs, then evaluating that model across a uniform 3D grid to produce a LUT. The hierarchical algorithm provides good control over smoothness and detail through its radius, layers and smoothing parameters.
-
-Note: RBF requires the `xalglib` package which is only available on Windows and Linux. Install with `pip install camera-match[rbf]`.
+RBF works by fitting a hierarchical radial basis function model to the source/target colour pairs, then evaluating that model across a uniform 3D grid to produce a LUT. The hierarchical algorithm provides good control over smoothness and detail through its radius, layers and smoothing parameters. The implementation is pure numpy/scipy, so it works on all platforms with no extra dependencies.
 
 ## Gathering Data
 
@@ -219,7 +211,7 @@ lut_2d.export_LUT(path="LUT.cube")
 
 ### Creating a LUT using RBF
 
-For users who prefer the RBF method. Requires `pip install camera-match[rbf]`.
+For users who prefer the RBF method.
 
 ```python
 import numpy as np

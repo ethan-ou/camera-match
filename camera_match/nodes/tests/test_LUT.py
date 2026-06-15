@@ -1,5 +1,5 @@
 import numpy as np
-from camera_match import LUT3D, LUT2D
+from camera_match import LUT3D, LUT2D, RBF
 
 # From https://github.com/Polyrhythm/create_lut/blob/main/main.py
 MATRIX_TEST = np.array(
@@ -75,3 +75,12 @@ class TestLUT:
         source = node(MATRIX_TEST)
 
         np.testing.assert_allclose(source, MATRIX_REFERENCE, atol=0.2)
+
+    def test_rbf(self):
+        # RBF is a pure numpy/scipy reimplementation of ALGLIB's hierarchical
+        # RBF, so it runs on all platforms with no xalglib dependency.
+        node = RBF()
+        node.solve(MATRIX_TEST, MATRIX_REFERENCE)
+        source = node(MATRIX_TEST)
+
+        np.testing.assert_allclose(source, MATRIX_REFERENCE, atol=0.05)

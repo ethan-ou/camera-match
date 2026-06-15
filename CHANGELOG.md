@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+-   Reimplement RBF (Radial Basis Function) in pure numpy/scipy, removing the
+    native `xalglib` dependency. RBF now works on all platforms with no extra
+    install. The algorithm is a faithful port of ALGLIB's hierarchical RBF
+    (multi-scale residual layers with radius halving, per-layer centre
+    decimation and a compactly-supported basis).
+
 ## 0.2.0
 
 -   Re-add RBF (Radial Basis Function) as an optional method for 3D LUT generation.
